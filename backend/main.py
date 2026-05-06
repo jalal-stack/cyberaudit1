@@ -194,7 +194,15 @@ def generate_ai_summary(domain, results, score, risk_level, language):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"AI generation failed: {str(e)}"
+        error_msg = str(e).lower()
+        if "429" in error_msg or "quota" in error_msg:
+            if language == "Russian":
+                return "Анализ ИИ временно недоступен (превышен лимит запросов в бесплатном API Gemini). Пожалуйста, повторите попытку через минуту."
+            elif language == "Uzbek":
+                return "Sun'iy intellekt tahlili vaqtinchalik mavjud emas (Gemini API bepul limitidan oshib ketdi). Iltimos, bir daqiqadan so'ng qayta urinib ko'ring."
+            else:
+                return "AI analysis is temporarily unavailable (Gemini free tier quota exceeded). Please try again in a minute."
+        return f"AI analysis failed to generate. Please try again."
 
 # REST API Endpoints
 @app.get("/scan")
