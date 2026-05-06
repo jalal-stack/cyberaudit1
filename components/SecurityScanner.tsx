@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ScanResults, ScanId, ScanOption, ScanStatus, ScanResultItem, ScanHistoryItem } from '../types';
 import { runSecurityAudit } from '../services/geminiService';
 import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon } from './icons';
@@ -116,7 +117,9 @@ const OverallScore: React.FC<{ score: number, summary: string, t: (key: string) 
                 </div>
                 <div>
                     <h3 className="text-2xl font-bold text-white text-center sm:text-left">{t('scanner.overallScore')}</h3>
-                    <p className="text-slate-300 mt-2 text-center sm:text-left">{summary}</p>
+                    <div className="markdown-body text-slate-300 mt-2 text-center sm:text-left text-sm sm:text-base">
+                        <ReactMarkdown>{summary}</ReactMarkdown>
+                    </div>
                 </div>
              </div>
         </div>
