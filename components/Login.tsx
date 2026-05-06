@@ -10,9 +10,15 @@ interface LoginProps {
 export const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
   const { t } = useTranslation();
 
+  const [isLoading, setIsLoading] = React.useState(false);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin();
+    setIsLoading(true);
+    setTimeout(() => {
+      onLogin();
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
@@ -33,6 +39,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => 
                   className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
                   placeholder={t('login.emailPlaceholder')}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -45,14 +52,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => 
                   className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
                   placeholder={t('login.passwordPlaceholder')}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
+              disabled={isLoading}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
             >
-              {t('login.loginButton')}
+              {isLoading ? (
+                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : t('login.loginButton')}
             </button>
           </form>
           <div className="text-center mt-6">

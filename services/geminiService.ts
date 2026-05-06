@@ -62,7 +62,7 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -71,6 +71,9 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
     });
 
     const jsonString = response.text;
+    if (!jsonString) {
+      throw new Error("No response text from Gemini");
+    }
     const result = JSON.parse(jsonString);
 
     // Ensure all requested scan types are in the result, even if Gemini omits them

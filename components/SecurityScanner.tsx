@@ -266,7 +266,7 @@ export const SecurityScanner: React.FC<{
     try {
       const geminiTranslations = {
         analysisNotGeneratedSummary: t('gemini.analysisNotGeneratedSummary'),
-        analysisNotGeneratedRecommendation: t('gem.analysisNotGeneratedRecommendation'),
+        analysisNotGeneratedRecommendation: t('gemini.analysisNotGeneratedRecommendation'),
       }
       const auditResults = await runSecurityAudit(url, selectedScanLabels, geminiTranslations, language);
       setResults(auditResults);

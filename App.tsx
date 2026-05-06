@@ -10,6 +10,9 @@ import { ScanHistoryItem, ScanResults } from './types';
 
 const translations = {
   ru: {
+    common: {
+      comingSoon: "Скоро появится!",
+    },
     header: {
       title: "CyberAudit",
       dashboard: "Панель управления",
@@ -62,6 +65,10 @@ const translations = {
       historyEmptySubtext: "Запустите свое первое сканирование, чтобы увидеть результаты здесь.",
       historyNotFound: "Сканирования не найдены.",
       historyNotFoundSubtext: "Попробуйте изменить фильтр или сбросить его.",
+      securityScoreHistory: "История оценок безопасности",
+      points: "Баллов",
+      score: "Оценка",
+      scans: "Сканирований",
       scoreUnit: "Баллов",
       quickActions: "Быстрые действия",
       newScan: "Новое сканирование",
@@ -146,6 +153,9 @@ const translations = {
     }
   },
   uz: {
+    common: {
+      comingSoon: "Tez orada!",
+    },
     header: {
       title: "CyberAudit",
       dashboard: "Boshqaruv paneli",
@@ -198,6 +208,10 @@ const translations = {
       historyEmptySubtext: "Natijalarni bu yerda ko'rish uchun birinchi skanerlashni boshlang.",
       historyNotFound: "Skanerlashlar topilmadi.",
       historyNotFoundSubtext: "Filtrni o'zgartirib ko'ring yoki uni olib tashlang.",
+      securityScoreHistory: "Xavfsizlik ballari tarixi",
+      points: "Ball",
+      score: "Ball",
+      scans: "Skanerlashlar",
       scoreUnit: "Ball",
       quickActions: "Tezkor amallar",
       newScan: "Yangi skanerlash",
@@ -341,20 +355,34 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('login');
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [viewingResults, setViewingResults] = useState<ScanHistoryItem | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
   const { t, language } = useTranslation();
 
   useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  useEffect(() => {
     try {
+      const storedAuth = localStorage.getItem('isAuthenticated');
+      if (storedAuth === 'true') {
+        setIsAuthenticated(true);
+        setCurrentView('dashboard');
+      }
+
       const storedHistory = localStorage.getItem('scanHistory');
       if (storedHistory) {
         setScanHistory(JSON.parse(storedHistory));
       }
     } catch (error) {
-      console.error("Failed to load scan history from localStorage", error);
+      console.error("Failed to load state from localStorage", error);
       setScanHistory([]);
     }
   }, []);
-  
+
   const displayedScanHistory = useMemo(() => {
     if (scanHistory.length > 0) {
       return scanHistory;
@@ -368,18 +396,29 @@ function App() {
     const exampleHistoryItem: ScanHistoryItem = {
       id: 'example-kun-uz',
       url: 'kun.uz',
-      date: new Date().toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU'),
+      date: new Date().toLocaleString(language === 'uz' ? 'uz' : 'ru', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
       results: exampleReportData,
     };
     return [exampleHistoryItem];
   }, [scanHistory, t, language]);
 
-
   const addScanToHistory = (url: string, results: ScanResults) => {
     const newHistoryItem: ScanHistoryItem = {
       id: new Date().toISOString(),
       url,
-      date: new Date().toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU'),
+      date: new Date().toLocaleString(language === 'uz' ? 'uz' : 'ru', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
       results,
     };
 
@@ -404,12 +443,18 @@ function App() {
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
     setCurrentView('dashboard');
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
     setCurrentView('login');
+  };
+
+  const showToast = (message: string, type: 'success' | 'info' = 'info') => {
+    setToast({ message, type });
   };
 
   const renderContent = () => {
@@ -421,7 +466,14 @@ function App() {
     }
 
     if (currentView === 'dashboard') {
-      return <Dashboard scanHistory={displayedScanHistory} onViewScan={handleViewScan} setCurrentView={handleSetView} />;
+      return (
+        <Dashboard 
+          scanHistory={displayedScanHistory} 
+          onViewScan={handleViewScan} 
+          setCurrentView={handleSetView}
+          onActionNotImplemented={(name) => showToast(`${t('header.title')}: ${name} ${t('common.comingSoon')}`, 'info')}
+        />
+      );
     }
     if (currentView === 'scanner') {
       return (
@@ -451,6 +503,20 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderContent()}
       </main>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-4 right-4 z-50 animate-bounce-in">
+          <div className={`px-6 py-3 rounded-xl border backdrop-blur-md shadow-2xl flex items-center space-x-3 ${
+            toast.type === 'success' 
+              ? 'bg-green-500/20 border-green-500/50 text-green-300' 
+              : 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-green-400' : 'bg-purple-400'}`}></div>
+            <p className="text-sm font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
