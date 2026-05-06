@@ -36,63 +36,71 @@ interface GeminiTranslations {
 }
 
 export const runSecurityAudit = async (url: string, selectedScans: string[], translations: GeminiTranslations, language: Language): Promise<ScanResults> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API key is not configured.");
+  const backendUrl = import.meta.env.VITE_API_BASE_URL;
+
+  if (!backendUrl) {
+    throw new Error("Backend URL (VITE_API_BASE_URL) is not configured.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  const scanList = selectedScans.join(', ');
-  const languageName = language === 'ru' ? 'Russian' : 'Uzbek';
-
-  const prompt = `
-    You are CyberAudit, an advanced AI cybersecurity analyst. 
-    A user has requested a security scan for the website: ${url}.
-    
-    Perform a simulated but realistic and plausible analysis for the following areas: ${scanList}.
-    
-    Provide a detailed report in JSON format. The report must strictly adhere to the provided schema.
-
-    **IMPORTANT INSTRUCTIONS:**
-    1. The 'status' field for each detail item MUST be one of the following exact strings: 'PASS', 'FAIL', or 'WARN'. Do NOT translate this field.
-    2. All other string values in the JSON response (overall summary, and for each detail item: title, summary, recommendation) MUST be written in the ${languageName} language.
-    
-    The analysis should be critical and identify potential issues where appropriate, providing specific and actionable advice.
-    The overallScore should reflect the weighted average of the individual scan results.
-  `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: scanResultsSchema,
-      },
+    const response = await fetch(`${backendUrl}/scan?domain=${encodeURIComponent(url)}&lang=${language}`, {
+      method: 'GET',
+      headers: {
+          'Accept': 'application/json',
+      }
     });
 
-    const jsonString = response.text;
-    if (!jsonString) {
-      throw new Error("No response text from Gemini");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API error: ${response.status} - ${errorText}`);
+      throw new Error(`API error: ${response.status}`);
     }
-    const result = JSON.parse(jsonString);
-
-    // Ensure all requested scan types are in the result, even if Gemini omits them
-    const resultTitles = new Set(result.details.map((d: { title: string; }) => d.title.toLowerCase()));
-    for (const scan of selectedScans) {
-        if (!resultTitles.has(scan.toLowerCase())) {
-            result.details.push({
-                title: scan,
-                status: 'WARN',
-                summary: translations.analysisNotGeneratedSummary,
-                recommendation: translations.analysisNotGeneratedRecommendation
-            });
-        }
+    const data = await response.json();
+    
+    // Transform Python backend format to our frontend format
+    const details = [];
+    const res = data.results || {};
+    
+    if (selectedScans.includes("SSL/HTTPS Analysis") || selectedScans.includes("Анализ SSL/HTTPS") || selectedScans.includes("SSL/HTTPS tahlili")) {
+        details.push({
+            title: "SSL/HTTPS Analysis",
+            status: res.ssl?.valid ? 'PASS' : 'FAIL',
+            summary: res.ssl?.valid ? `Valid certificate issued by ${res.ssl.issuer}` : `SSL issues detected: ${res.ssl?.error || 'Unknown'}`,
+            recommendation: res.ssl?.valid ? "" : "Renew or install a trusted SSL certificate."
+        });
+    }
+    
+    if (selectedScans.includes("Open Ports") || selectedScans.includes("Открытые порты") || selectedScans.includes("Ochiq portlar")) {
+        const openPorts = res.ports?.open || [];
+        const status = openPorts.length > 2 ? 'WARN' : 'PASS'; // basic logic
+        details.push({
+            title: "Open Ports",
+            status: status,
+            summary: `Found ${openPorts.length} open ports: ${openPorts.join(', ')}`,
+            recommendation: status === 'WARN' ? "Close unnecessary open ports." : ""
+        });
     }
 
-    return result as ScanResults;
+    if (selectedScans.includes("Security Headers") || selectedScans.includes("Заголовки безопасности") || selectedScans.includes("Xavfsizlik sarlavhalari")) {
+        const missing = res.headers?.missing || [];
+        details.push({
+            title: "Security Headers",
+            status: missing.length > 0 ? 'WARN' : 'PASS',
+            summary: missing.length > 0 ? `Missing security headers: ${missing.join(', ')}` : "All standard security headers are present.",
+            recommendation: missing.length > 0 ? "Implement missing HTTP security headers." : ""
+        });
+    }
+    
+    const overallScore = typeof data.score === 'number' ? data.score : 0;
+    
+    return {
+        overallScore: overallScore,
+        summary: data.ai_summary || "Real scan completed successfully.",
+        details: details
+    } as ScanResults;
+
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    // Throw a generic error key, the component will translate it.
-    throw new Error("errors.geminiFetchFailed");
+    console.error("Error calling real backend API:", error);
+    throw new Error("errors.geminiFetchFailed"); // Keeping the same error key for frontend translations, but it means backend failed now. Or maybe we should improve it.
   }
 };
