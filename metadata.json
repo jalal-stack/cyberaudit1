@@ -1,0 +1,5 @@
+{
+  "name": "Copy of CyberAudit Security Scanner",
+  "description": "A web application that uses AI to perform a comprehensive security audit of websites, checking for vulnerabilities in SSL, ports, headers, CMS, and more, and provides detailed reports with recommendations.",
+  "requestFramePermissions": []
+}
