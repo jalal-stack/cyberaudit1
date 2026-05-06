@@ -36,7 +36,7 @@ interface GeminiTranslations {
 }
 
 export const runSecurityAudit = async (url: string, selectedScans: string[], translations: GeminiTranslations, language: Language): Promise<ScanResults> => {
-  const backendUrl = import.meta.env.VITE_API_BASE_URL;
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || "https://cyberaudit1.onrender.com";
 
   if (!backendUrl) {
     throw new Error("Backend URL (VITE_API_BASE_URL) is not configured.");
