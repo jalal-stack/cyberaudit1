@@ -57,45 +57,93 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
     }
     const data = await response.json();
     
-    // Transform Python backend format to our frontend format
-    const details = [];
     const res = data.results || {};
-    
-    if (selectedScans.includes("SSL/HTTPS Analysis") || selectedScans.includes("Анализ SSL/HTTPS") || selectedScans.includes("SSL/HTTPS tahlili")) {
-        details.push({
-            title: "SSL/HTTPS Analysis",
-            status: res.ssl?.valid ? 'PASS' : 'FAIL',
-            summary: res.ssl?.valid ? `Valid certificate issued by ${res.ssl.issuer}` : `SSL issues detected: ${res.ssl?.error || 'Unknown'}`,
-            recommendation: res.ssl?.valid ? "" : "Renew or install a trusted SSL certificate."
-        });
-    }
-    
-    if (selectedScans.includes("Open Ports") || selectedScans.includes("Открытые порты") || selectedScans.includes("Ochiq portlar")) {
-        const openPorts = res.ports?.open || [];
-        const status = openPorts.length > 2 ? 'WARN' : 'PASS'; // basic logic
-        details.push({
-            title: "Open Ports",
-            status: status,
-            summary: `Found ${openPorts.length} open ports: ${openPorts.join(', ')}`,
-            recommendation: status === 'WARN' ? "Close unnecessary open ports." : ""
-        });
+    let details: any[] = [];
+    let summaryText = data.ai_summary || "Real scan completed successfully.";
+    let overallScore = typeof data.score === 'number' ? data.score : 0;
+
+    // Check if the backend has returned our new structured JSON
+    try {
+        if (summaryText.includes('"FORMATTED_JSON"')) {
+            const parsedSummary = JSON.parse(summaryText);
+            if (parsedSummary.FORMATTED_JSON && parsedSummary.data) {
+                details = parsedSummary.data.details || [];
+                summaryText = parsedSummary.data.summary || "";
+                if (typeof parsedSummary.data.score === 'number') {
+                    overallScore = parsedSummary.data.score;
+                }
+            }
+        }
+    } catch (e) {
+        // ignore parse error
     }
 
-    if (selectedScans.includes("Security Headers") || selectedScans.includes("Заголовки безопасности") || selectedScans.includes("Xavfsizlik sarlavhalari")) {
-        const missing = res.headers?.missing || [];
-        details.push({
-            title: "Security Headers",
-            status: missing.length > 0 ? 'WARN' : 'PASS',
-            summary: missing.length > 0 ? `Missing security headers: ${missing.join(', ')}` : "All standard security headers are present.",
-            recommendation: missing.length > 0 ? "Implement missing HTTP security headers." : ""
-        });
+    if (details.length === 0) {
+        // Fallback: parse markdown format
+        const detailRegex = /(?:\n|^)\d+\.\s+\*\*([^*]+)\*\*:?([\s\S]*?)(?=(?:\n|^)\d+\.\s+\*\*|\n\*\*Рекомендации|\n---|$)/g;
+        let match;
+        
+        while ((match = detailRegex.exec(summaryText)) !== null) {
+            let title = match[1].trim();
+            let content = match[2].trim();
+            
+            let status = 'WARN';
+            const lowerContent = content.toLowerCase();
+            if (lowerContent.includes('критическ') || lowerContent.includes('critical') || lowerContent.includes('high risk') || lowerContent.includes('высокий')) {
+                status = 'FAIL';
+            } else if (lowerContent.includes('позитив') || lowerContent.includes('good') || lowerContent.includes('pass') || lowerContent.includes('действителен')) {
+                status = 'PASS';
+            }
+            
+            details.push({
+                title: title,
+                status: status,
+                summary: content.replace(/^\*\s*\*\*[^*]+\*\*:?\s*/m, '').trim(), // try to strip the internal bold status if present
+                recommendation: "" 
+            });
+        }
+
+        if (details.length > 0) {
+            // Cut the summary down to just the intro part
+            summaryText = summaryText.split(/(?:\n|^)\d+\.\s+\*\*/)[0].trim();
+            summaryText = summaryText.replace(/\*\*Общая оценка:\*\*[\s\S]*?(?=Представлен|Подробный|---|$)/i, '').trim();
+        } else {
+            // Original hardcoded logic if regex didn't find anything
+            if (selectedScans.includes("SSL/HTTPS Analysis") || selectedScans.includes("Анализ SSL/HTTPS") || selectedScans.includes("SSL/HTTPS tahlili")) {
+                details.push({
+                    title: "SSL/HTTPS Analysis",
+                    status: res.ssl?.valid ? 'PASS' : 'FAIL',
+                    summary: res.ssl?.valid ? `Valid certificate issued by ${res.ssl.issuer}` : `SSL issues detected: ${res.ssl?.error || 'Unknown'}`,
+                    recommendation: res.ssl?.valid ? "" : "Renew or install a trusted SSL certificate."
+                });
+            }
+            
+            if (selectedScans.includes("Open Ports") || selectedScans.includes("Открытые порты") || selectedScans.includes("Ochiq portlar")) {
+                const openPorts = res.ports?.open || [];
+                const status = openPorts.length > 2 ? 'WARN' : 'PASS'; 
+                details.push({
+                    title: "Open Ports",
+                    status: status,
+                    summary: `Found ${openPorts.length} open ports: ${openPorts.join(', ')}`,
+                    recommendation: status === 'WARN' ? "Close unnecessary open ports." : ""
+                });
+            }
+
+            if (selectedScans.includes("Security Headers") || selectedScans.includes("Заголовки безопасности") || selectedScans.includes("Xavfsizlik sarlavhalari")) {
+                const missing = res.headers?.missing || [];
+                details.push({
+                    title: "Security Headers",
+                    status: missing.length > 0 ? 'WARN' : 'PASS',
+                    summary: missing.length > 0 ? `Missing security headers: ${missing.join(', ')}` : "All standard security headers are present.",
+                    recommendation: missing.length > 0 ? "Implement missing HTTP security headers." : ""
+                });
+            }
+        }
     }
-    
-    const overallScore = typeof data.score === 'number' ? data.score : 0;
     
     return {
         overallScore: overallScore,
-        summary: data.ai_summary || "Real scan completed successfully.",
+        summary: summaryText,
         details: details
     } as ScanResults;
 

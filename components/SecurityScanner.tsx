@@ -57,23 +57,23 @@ const ResultCard: React.FC<{ item: ScanResultItem, t: (key: string) => string }>
     const config = statusConfig[item.status] || statusConfig[ScanStatus.WARN];
 
     return (
-        <div className={`rounded-xl p-6 border ${config.borderColor} ${config.bgColor}`}>
-            <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-slate-700/50">
+        <div className={`h-full rounded-xl p-6 border ${config.borderColor} ${config.bgColor} flex flex-col`}>
+            <div className="flex items-start space-x-4 h-full">
+                <div className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-slate-700/50 mt-1">
                     {config.icon}
                 </div>
-                <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                        <h4 className="text-lg font-semibold text-white">{item.title}</h4>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.bgColor} ${config.textColor}`}>
+                <div className="flex-1 flex flex-col h-full min-w-0">
+                    <div className="flex justify-between items-start gap-3">
+                        <h4 className="text-lg font-semibold text-white break-words">{item.title}</h4>
+                        <span className={`shrink-0 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider rounded-full ${config.bgColor} ${config.textColor}`}>
                             {t(`status.${item.status.toLowerCase()}`)}
                         </span>
                     </div>
-                    <p className="text-slate-300 text-sm mt-2">{item.summary}</p>
+                    <p className="text-slate-300 text-sm mt-3 leading-relaxed flex-grow whitespace-pre-wrap">{item.summary}</p>
                     {item.recommendation && (
-                        <div className="mt-4 p-3 rounded-lg bg-slate-800 border border-slate-700">
-                            <p className="text-sm font-medium text-purple-300">{t('scanner.recommendation')}</p>
-                            <p className="text-slate-300 text-sm mt-1">{item.recommendation}</p>
+                        <div className="mt-5 p-3.5 rounded-lg bg-slate-800/80 border border-slate-700/50">
+                            <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider">{t('scanner.recommendation')}</p>
+                            <p className="text-slate-300 text-sm mt-1.5">{item.recommendation}</p>
                         </div>
                     )}
                 </div>
@@ -117,8 +117,22 @@ const OverallScore: React.FC<{ score: number, summary: string, t: (key: string) 
                 </div>
                 <div>
                     <h3 className="text-2xl font-bold text-white text-center sm:text-left">{t('scanner.overallScore')}</h3>
-                    <div className="markdown-body text-slate-300 mt-2 text-center sm:text-left text-sm sm:text-base">
-                        <ReactMarkdown>{summary}</ReactMarkdown>
+                    <div className="text-slate-300 mt-6 text-left text-sm sm:text-base">
+                        <ReactMarkdown
+                            components={{
+                                h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-white mt-8 mb-4 border-b border-slate-700 pb-2 flex items-center gap-2" {...props} />,
+                                h2: ({node, ...props}) => <h2 className="text-xl font-bold text-white mt-8 mb-4 border-b border-slate-700 pb-2 flex items-center gap-2" {...props} />,
+                                h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-white mt-6 mb-3 flex items-center gap-2" {...props} />,
+                                h4: ({node, ...props}) => <h4 className="text-base font-semibold text-white mt-4 mb-2 flex items-center gap-2" {...props} />,
+                                ul: ({node, ...props}) => <ul className="space-y-2 mt-4 ml-6 list-disc text-slate-300" {...props} />,
+                                ol: ({node, ...props}) => <ol className="space-y-2 mt-4 ml-6 list-decimal text-slate-300" {...props} />,
+                                li: ({node, ...props}) => <li className="pl-2" {...props} />,
+                                p: ({node, ...props}) => <p className="mb-4 last:mb-0 leading-relaxed text-slate-300" {...props} />,
+                                strong: ({node, ...props}) => <strong className="text-white font-semibold flex items-center gap-2" {...props} />
+                            }}
+                        >
+                            {summary}
+                        </ReactMarkdown>
                     </div>
                 </div>
              </div>

@@ -188,11 +188,37 @@ def generate_ai_summary(domain, results, score, risk_level, language):
         Results: {results}
         
         Provide a professional security analysis, highlighting detected risks, missing protections, and actionable recommendations.
-        Format as plain text or markdown.
-        Very IMPORTANT: Output the entire response in the {language} language.
+        Format your response STRICTLY as valid JSON with the following structure:
+        {{
+            "score": <integer 0-100>,
+            "summary": "<overall summary of the security posture>",
+            "details": [
+                {{
+                    "title": "<short title, e.g. SSL, Headers>",
+                    "status": "<PASS, FAIL, or WARN>",
+                    "summary": "<detailed description of finding>",
+                    "recommendation": "<how to fix it>"
+                }}
+            ]
+        }}
+        Do not use markdown wrappers like ```json, just output the raw JSON.
+        Very IMPORTANT: Output all text inside the JSON in the {language} language.
         """
         response = model.generate_content(prompt)
-        return response.text
+        try:
+            text = response.text.strip()
+            if text.startswith("```json"): text = text[7:]
+            if text.startswith("```"): text = text[3:]
+            if text.endswith("```"): text = text[:-3]
+            ai_data = json.loads(text.strip())
+            # Return a special JSON string that we will identify on the frontend
+            return json.dumps({
+                "FORMATTED_JSON": True,
+                "data": ai_data
+            })
+        except Exception as e:
+            return response.text
+
     except Exception as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg:
