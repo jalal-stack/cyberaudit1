@@ -64,14 +64,35 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
 
     // Check if the backend has returned our new structured JSON
     try {
-        if (summaryText.includes('"FORMATTED_JSON"')) {
-            const parsedSummary = JSON.parse(summaryText);
-            if (parsedSummary.FORMATTED_JSON && parsedSummary.data) {
-                details = parsedSummary.data.details || [];
-                summaryText = parsedSummary.data.summary || "";
-                if (typeof parsedSummary.data.score === 'number') {
-                    overallScore = parsedSummary.data.score;
-                }
+        let extractedJsonStr = summaryText;
+
+        // Try extracting JSON from code blocks if they exist
+        const jsonMatch = summaryText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+            extractedJsonStr = jsonMatch[1];
+        } else {
+            // Find the first { and last } to strip leading/trailing text from Gemini
+            const firstBrace = summaryText.indexOf('{');
+            const lastBrace = summaryText.lastIndexOf('}');
+            if (firstBrace >= 0 && lastBrace >= 0 && lastBrace > firstBrace) {
+                extractedJsonStr = summaryText.substring(firstBrace, lastBrace + 1);
+            }
+        }
+
+        const parsedSummary = JSON.parse(extractedJsonStr);
+        
+        if (parsedSummary.FORMATTED_JSON && parsedSummary.data) {
+            details = parsedSummary.data.details || [];
+            summaryText = parsedSummary.data.summary || "";
+            if (typeof parsedSummary.data.score === 'number') {
+                overallScore = parsedSummary.data.score;
+            }
+        } else if (parsedSummary.details !== undefined) {
+             // Try handling it as raw JSON structure
+            details = parsedSummary.details || [];
+            summaryText = parsedSummary.summary || "";
+            if (typeof parsedSummary.score === 'number') {
+                overallScore = parsedSummary.score;
             }
         }
     } catch (e) {
