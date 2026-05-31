@@ -202,7 +202,10 @@ def generate_ai_summary(domain, results, score, risk_level, language):
             ]
         }}
         Do not use markdown wrappers like ```json, just output the raw JSON.
-        Very IMPORTANT: Output all text inside the JSON in the {language} language.
+        
+        CRITICAL MULTILINGUAL REQUIREMENT:
+        You MUST translate and write ALL human-readable text values ("summary", "title", "recommendation" etc) ENTIRELY in the following language: {language}.
+        Under NO circumstances should you return English or Russian if the requested language is {language}. If {language} is "Uzbek", you MUST respond fully in the Uzbek language (O'zbek tili).
         """
         response = model.generate_content(prompt)
         try:
