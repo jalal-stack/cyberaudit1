@@ -256,7 +256,9 @@ def generate_ai_summary(domain, results, score, risk_level, language):
         
         CRITICAL MULTILINGUAL REQUIREMENT:
         You MUST translate and write ALL human-readable text values ("summary", "title", "recommendation" etc) ENTIRELY in the following language: {language}.
-        Under NO circumstances should you return English or Russian if the requested language is {language}. If {language} is "Uzbek", you MUST respond fully in the Uzbek language (O'zbek tili).
+        If the language is "Uzbek", you MUST respond fully in the Uzbek language (O'zbek tili).
+        If the language is "Russian", you MUST respond fully in the Russian language (Русский язык).
+        Do NOT output English unless specifically requested.
         """
         response = model.generate_content(prompt)
         try:

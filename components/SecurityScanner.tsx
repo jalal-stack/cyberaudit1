@@ -327,6 +327,23 @@ export const SecurityScanner: React.FC<{
                 </button>
             </div>
             <OverallScore score={results.overallScore} summary={results.summary} t={t} />
+            
+            {results.rawTechnologies && results.rawTechnologies.length > 0 && (
+                <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
+                    <div className="flex items-center space-x-3 mb-6">
+                        <DatabaseIcon className="h-6 w-6 text-blue-400" />
+                        <h3 className="text-xl font-bold text-white">{t('scanner.technologiesLabel') || "Technologies & CMS (Wappalyzer Mode)"}</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {results.rawTechnologies.map((tech, idx) => (
+                             <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-slate-700/50 text-slate-200 border border-slate-600/50">
+                                 {tech}
+                             </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {results.details.map((item, index) => (
                     <ResultCard key={index} item={item} t={t} />
