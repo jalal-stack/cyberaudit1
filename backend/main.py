@@ -157,8 +157,23 @@ def scan_cms(domain: str):
         if 'phpsessid' in cookies: tech_stack.append("PHP")
         
         # Analytics & Tools
-        if 'google-analytics.com' in html or 'gtag' in html: tech_stack.append("Google Analytics")
+        if 'google-analytics.com' in html or 'gtag(' in html or 'ga(' in html: tech_stack.append("Google Analytics")
+        if 'googletagmanager.com' in html or 'gtm.js' in html: tech_stack.append("Google Tag Manager")
         if 'yandex.ru/metrika' in html or 'mc.yandex.ru' in html: tech_stack.append("Yandex Metrika")
+        
+        # Fonts & Icons
+        if 'fonts.googleapis.com' in html or 'fonts.gstatic.com' in html: tech_stack.append("Google Font API")
+        if 'use.fontawesome.com' in html or 'font-awesome' in html: tech_stack.append("FontAwesome")
+        
+        # Miscellaneous & Libraries
+        if 'manifest.json' in html or 'theme-color' in html: tech_stack.append("PWA")
+        if 'og:title' in html or 'og:image' in html: tech_stack.append("Open Graph")
+        if 'jszip' in html.lower(): tech_stack.append("JSZip")
+        if 'highlight.js' in html.lower() or 'hljs' in html.lower(): tech_stack.append("Highlight.js")
+        if 'monaco-editor' in html.lower(): tech_stack.append("Monaco Editor")
+        
+        # JS additions
+        if 'type="text/typescript"' in html or '.ts"' in html: tech_stack.append("TypeScript")
         
         tech_stack = list(set(tech_stack)) # Remove duplicates
         
