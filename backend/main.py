@@ -158,8 +158,12 @@ def scan_cms(domain: str):
         
         # Analytics & Tools
         if 'google-analytics.com' in html or 'gtag(' in html or 'ga(' in html: tech_stack.append("Google Analytics")
+        if 'googletagmanager.com/gtag/js?id=g-' in html or "gtag('config'" in html.replace('"', "'") and '-g-' in html.lower(): tech_stack.append("GA4")
         if 'googletagmanager.com' in html or 'gtm.js' in html: tech_stack.append("Google Tag Manager")
         if 'yandex.ru/metrika' in html or 'mc.yandex.ru' in html: tech_stack.append("Yandex Metrika")
+        
+        # Ads
+        if 'adfox' in html or 'adfox.ru' in html: tech_stack.append("ADFOX")
         
         # Fonts & Icons
         if 'fonts.googleapis.com' in html or 'fonts.gstatic.com' in html: tech_stack.append("Google Font API")
@@ -171,9 +175,22 @@ def scan_cms(domain: str):
         if 'jszip' in html.lower(): tech_stack.append("JSZip")
         if 'highlight.js' in html.lower() or 'hljs' in html.lower(): tech_stack.append("Highlight.js")
         if 'monaco-editor' in html.lower(): tech_stack.append("Monaco Editor")
+        if 'h3' in headers.get('alt-svc', ''): tech_stack.append("HTTP/3")
+        
+        # Media Components
+        if 'jplayer' in html.lower(): tech_stack.append("jPlayer")
         
         # JS additions
         if 'type="text/typescript"' in html or '.ts"' in html: tech_stack.append("TypeScript")
+        if 'aos.js' in html.lower() or 'aos.css' in html.lower() or 'aos-' in html.lower(): tech_stack.append("AOS")
+        if 'swiper' in html.lower(): tech_stack.append("Swiper")
+
+        import re
+        jquery_match = re.search(r'jquery[^\w]*([0-9\.]+)(?:\.min)?\.js', html)
+        if jquery_match:
+            tech_stack.append(f"jQuery {jquery_match.group(1)}")
+        elif 'jquery' in html.lower():
+            tech_stack.append("jQuery")
         
         tech_stack = list(set(tech_stack)) # Remove duplicates
         
