@@ -328,17 +328,31 @@ export const SecurityScanner: React.FC<{
             </div>
             <OverallScore score={results.overallScore} summary={results.summary} t={t} />
             
-            {results.rawTechnologies && results.rawTechnologies.length > 0 && (
+            {results.rawTechnologies && Object.keys(results.rawTechnologies).length > 0 && (
                 <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
-                    <div className="flex items-center space-x-3 mb-6">
+                    <div className="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
                         <DatabaseIcon className="h-6 w-6 text-blue-400" />
-                        <h3 className="text-xl font-bold text-white">{t('scanner.technologiesLabel') || "Technologies & CMS (Wappalyzer Mode)"}</h3>
+                        <h3 className="text-2xl font-bold text-white">{t('scanner.technologiesLabel') || "Technologies & CMS (Wappalyzer Analog)"}</h3>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {results.rawTechnologies.map((tech, idx) => (
-                             <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-slate-700/50 text-slate-200 border border-slate-600/50">
-                                 {tech}
-                             </span>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {Object.entries(results.rawTechnologies).map(([category, techs], idx) => (
+                             <div key={idx} className="space-y-4">
+                                <h4 className="text-[17px] font-semibold text-slate-300">{category}</h4>
+                                <div className="space-y-3">
+                                    {techs.map((tech, techIdx) => (
+                                        <div key={techIdx} className="flex items-center bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-800/50 group hover:bg-slate-800 transition-colors">
+                                            {/* Generic app icon representation */}
+                                            <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center mr-3 shrink-0">
+                                                <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{tech.substring(0,1).toUpperCase()}</span>
+                                            </div>
+                                            <span className="text-slate-200 group-hover:text-white transition-colors font-medium text-sm">
+                                                {tech}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                             </div>
                         ))}
                     </div>
                 </div>

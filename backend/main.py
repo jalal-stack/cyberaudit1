@@ -64,6 +64,42 @@ def get_ip_from_domain(domain):
         return None
 
 # Modules for Real Scans
+def scan_ddos(domain: str, headers: dict, server: str, cookies: dict):
+    # This checks for direct indicators of DDoS protection in headers or cookies
+    detected = []
+    
+    server_lower = server.lower()
+    
+    # Cloudflare
+    if 'cloudflare' in server_lower or '__cf_duid' in cookies or 'cf-ray' in dict(headers).keys():
+        detected.append("Cloudflare")
+        
+    # Akamai
+    if 'akamai' in server_lower or 'xgm-cdn' in dict(headers).keys():
+        detected.append("Akamai")
+        
+    # Imperva / Incapsula
+    if 'incapsula' in server_lower or 'visid_incap' in cookies:
+         detected.append("Imperva")
+         
+    # DDoS-Guard
+    if 'ddos-guard' in server_lower:
+         detected.append("DDoS-Guard")
+         
+    # Sucuri
+    if 'sucuri' in server_lower or 'x-sucuri-id' in dict(headers).keys():
+         detected.append("Sucuri")
+         
+    # AWS Shield / CloudFront
+    if 'cloudfront' in server_lower or 'x-amz-cf-id' in dict(headers).keys():
+         detected.append("AWS CloudFront (Basic DDoS Protection)")
+
+    protected = len(detected) > 0
+    return {
+        "protected": protected,
+        "providers": detected
+    }
+
 def scan_ssl(domain: str):
     context = ssl.create_default_context()
     try:
@@ -120,81 +156,83 @@ def scan_cms(domain: str):
         headers = {k.lower(): v.lower() for k, v in response.headers.items()}
         cookies = response.cookies.get_dict()
         
-        tech_stack = []
+        categories = {}
+        def add(cat, tech):
+            if cat not in categories: categories[cat] = []
+            if tech not in categories[cat]: categories[cat].append(tech)
         
         # CMS & E-commerce
-        if 'wp-content' in html or 'wordpress' in html: tech_stack.append("WordPress")
-        if 'shopify.com' in html or 'shopify' in headers.get('x-shopid', '') or '_s' in cookies: tech_stack.append("Shopify")
-        if 'joomla' in html: tech_stack.append("Joomla")
-        if 'drupal' in html or 'x-generator' in headers and 'drupal' in headers['x-generator']: tech_stack.append("Drupal")
-        if 'magento' in html or 'frontend' in cookies: tech_stack.append("Magento")
-        if 'bitrix' in html or 'bitrix_sm' in cookies: tech_stack.append("1C-Bitrix")
+        if 'wp-content' in html or 'wordpress' in html: add("CMS", "WordPress")
+        if 'shopify.com' in html or 'shopify' in headers.get('x-shopid', '') or '_s' in cookies: add("CMS", "Shopify")
+        if 'joomla' in html: add("CMS", "Joomla")
+        if 'drupal' in html or 'x-generator' in headers and 'drupal' in headers['x-generator']: add("CMS", "Drupal")
+        if 'magento' in html or 'frontend' in cookies: add("CMS", "Magento")
+        if 'bitrix' in html or 'bitrix_sm' in cookies: add("CMS", "1C-Bitrix")
 
         # Frameworks
-        if 'laravel' in str(headers) or 'laravel_session' in cookies: tech_stack.append("Laravel")
-        if '_next' in html or 'next.js' in html: tech_stack.append("Next.js")
-        if 'nuxt' in html or '_nuxt' in html: tech_stack.append("Nuxt.js")
-        if 'react' in html or 'data-reactroot' in html: tech_stack.append("React")
-        if 'ng-app' in html or 'angular' in html: tech_stack.append("Angular")
-        if 'vue' in html or 'data-v-' in html: tech_stack.append("Vue.js")
-        if 'django' in html or 'csrftoken' in cookies: tech_stack.append("Django")
-        if 'x-powered-by' in headers and 'express' in headers['x-powered-by']: tech_stack.append("Express")
+        if 'laravel' in str(headers) or 'laravel_session' in cookies: add("Frameworks", "Laravel")
+        if '_next' in html or 'next.js' in html: add("Frameworks", "Next.js")
+        if 'nuxt' in html or '_nuxt' in html: add("Frameworks", "Nuxt.js")
+        if 'react' in html or 'data-reactroot' in html: add("Frameworks", "React")
+        if 'ng-app' in html or 'angular' in html: add("Frameworks", "Angular")
+        if 'vue' in html or 'data-v-' in html: add("Frameworks", "Vue.js")
+        if 'django' in html or 'csrftoken' in cookies: add("Frameworks", "Django")
+        if 'x-powered-by' in headers and 'express' in headers['x-powered-by']: add("Frameworks", "Express")
 
         # Web Servers
         server = headers.get('server', '')
-        if 'nginx' in server: tech_stack.append("Nginx")
-        if 'apache' in server: tech_stack.append("Apache")
-        if 'cloudflare' in server: tech_stack.append("Cloudflare")
-        if 'litespeed' in server: tech_stack.append("LiteSpeed")
+        if 'nginx' in server: add("Web Servers", "Nginx")
+        if 'apache' in server: add("Web Servers", "Apache")
+        if 'litespeed' in server: add("Web Servers", "LiteSpeed")
 
         # Programming Languages
         if 'x-powered-by' in headers:
             powered_by = headers['x-powered-by']
-            if 'php' in powered_by: tech_stack.append("PHP")
-            if 'asp.net' in powered_by: tech_stack.append("ASP.NET")
-            if 'python' in powered_by: tech_stack.append("Python")
+            if 'php' in powered_by: add("Programming Languages", "PHP")
+            if 'asp.net' in powered_by: add("Programming Languages", "ASP.NET")
+            if 'python' in powered_by: add("Programming Languages", "Python")
 
-        if 'phpsessid' in cookies: tech_stack.append("PHP")
+        if 'phpsessid' in cookies: add("Programming Languages", "PHP")
         
-        # Analytics & Tools
-        if 'google-analytics.com' in html or 'gtag(' in html or 'ga(' in html: tech_stack.append("Google Analytics")
-        if 'googletagmanager.com/gtag/js?id=g-' in html or "gtag('config'" in html.replace('"', "'") and '-g-' in html.lower(): tech_stack.append("GA4")
-        if 'googletagmanager.com' in html or 'gtm.js' in html: tech_stack.append("Google Tag Manager")
-        if 'yandex.ru/metrika' in html or 'mc.yandex.ru' in html: tech_stack.append("Yandex Metrika")
+        # Analytics
+        if 'google-analytics.com' in html or 'gtag(' in html or 'ga(' in html: add("Analytics", "Google Analytics")
+        if 'googletagmanager.com/gtag/js?id=g-' in html or "gtag('config'" in html.replace('"', "'") and '-g-' in html.lower(): add("Analytics", "GA4")
+        if 'yandex.ru/metrika' in html or 'mc.yandex.ru' in html: add("Analytics", "Yandex Metrika")
         
+        # Tag Managers
+        if 'googletagmanager.com' in html or 'gtm.js' in html: add("Tag Managers", "Google Tag Manager")
+
         # Ads
-        if 'adfox' in html or 'adfox.ru' in html: tech_stack.append("ADFOX")
+        if 'adfox' in html or 'adfox.ru' in html: add("Ads", "ADFOX")
         
         # Fonts & Icons
-        if 'fonts.googleapis.com' in html or 'fonts.gstatic.com' in html: tech_stack.append("Google Font API")
-        if 'use.fontawesome.com' in html or 'font-awesome' in html: tech_stack.append("FontAwesome")
+        if 'fonts.googleapis.com' in html or 'fonts.gstatic.com' in html: add("Fonts", "Google Font API")
+        if 'use.fontawesome.com' in html or 'font-awesome' in html: add("Fonts", "FontAwesome")
         
-        # Miscellaneous & Libraries
-        if 'manifest.json' in html or 'theme-color' in html: tech_stack.append("PWA")
-        if 'og:title' in html or 'og:image' in html: tech_stack.append("Open Graph")
-        if 'jszip' in html.lower(): tech_stack.append("JSZip")
-        if 'highlight.js' in html.lower() or 'hljs' in html.lower(): tech_stack.append("Highlight.js")
-        if 'monaco-editor' in html.lower(): tech_stack.append("Monaco Editor")
-        if 'h3' in headers.get('alt-svc', ''): tech_stack.append("HTTP/3")
+        # Miscellaneous
+        if 'manifest.json' in html or 'theme-color' in html: add("Miscellaneous", "PWA")
+        if 'og:title' in html or 'og:image' in html: add("Miscellaneous", "Open Graph")
+        if 'h3' in headers.get('alt-svc', ''): add("Miscellaneous", "HTTP/3")
         
         # Media Components
-        if 'jplayer' in html.lower(): tech_stack.append("jPlayer")
+        if 'jplayer' in html.lower(): add("Video/Audio Player", "jPlayer")
         
-        # JS additions
-        if 'type="text/typescript"' in html or '.ts"' in html: tech_stack.append("TypeScript")
-        if 'aos.js' in html.lower() or 'aos.css' in html.lower() or 'aos-' in html.lower(): tech_stack.append("AOS")
-        if 'swiper' in html.lower(): tech_stack.append("Swiper")
+        # JS Libraries
+        if 'jszip' in html.lower(): add("JS Libraries", "JSZip")
+        if 'highlight.js' in html.lower() or 'hljs' in html.lower(): add("JS Libraries", "Highlight.js")
+        if 'monaco-editor' in html.lower(): add("JS Libraries", "Monaco Editor")
+        if 'type="text/typescript"' in html or '.ts"' in html: add("JS Libraries", "TypeScript")
+        if 'aos.js' in html.lower() or 'aos.css' in html.lower() or 'aos-' in html.lower(): add("JS Libraries", "AOS")
+        if 'swiper' in html.lower(): add("JS Libraries", "Swiper")
 
         import re
         jquery_match = re.search(r'jquery[^\w]*([0-9\.]+)(?:\.min)?\.js', html)
         if jquery_match:
-            tech_stack.append(f"jQuery {jquery_match.group(1)}")
+            add("JS Libraries", f"jQuery {jquery_match.group(1)}")
         elif 'jquery' in html.lower():
-            tech_stack.append("jQuery")
-        
-        tech_stack = list(set(tech_stack)) # Remove duplicates
-        
-        return {"detected": tech_stack if tech_stack else ["None Detected"]}
+            add("JS Libraries", "jQuery")
+            
+        return {"categories": categories if categories else {"None": ["None Detected"]}}
     except Exception as e:
         return {"error": str(e)}
 
@@ -231,6 +269,11 @@ def calculate_score(results: dict):
     risky_ports = [p for p in open_p if p not in [80, 443]]
     score -= len(risky_ports) * 10
     
+    # Add negative score if no DDoS protection is found
+    ddos_data = results.get("ddos", {})
+    if not ddos_data.get("protected"):
+        score -= 15 # Heavily penalize the lack of DDoS protection
+
     score = max(0, min(100, score))
     
     risk_level = "Low"
@@ -316,11 +359,25 @@ def run_scan(domain: str = Query(..., description="Domain without protocol"), la
         raise HTTPException(status_code=403, detail="Scanning private/internal IPs is forbidden.")
         
     results = {}
+    
+    # We fetch headers/server/cookies early for reuse, including ddos scan
+    try:
+        url_req = f"https://{domain}"
+        response = requests.get(url_req, timeout=5, allow_redirects=True)
+        resp_headers = {k.lower(): v.lower() for k, v in response.headers.items()}
+        resp_server = resp_headers.get('server', '')
+        resp_cookies = response.cookies.get_dict()
+    except:
+        resp_headers = {}
+        resp_server = ""
+        resp_cookies = {}
+
     results["ssl"] = scan_ssl(domain)
-    results["headers"] = scan_headers(domain)
+    results["headers"] = scan_headers(domain) # Note: can be optimized further by reusing response, but logic relies tightly on original request obj now
     results["dns_whois"] = scan_dns_whois(domain)
     results["cms"] = scan_cms(domain)
     results["ports"] = scan_ports(ip)
+    results["ddos"] = scan_ddos(domain, resp_headers, resp_server, resp_cookies)
     
     score, risk_level = calculate_score(results)
     

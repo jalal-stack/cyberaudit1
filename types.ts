@@ -33,7 +33,7 @@ export interface ScanResults {
   overallScore: number;
   summary: string;
   details: ScanResultItem[];
-  rawTechnologies?: string[];
+  rawTechnologies?: Record<string, string[]>;
 }
 
 export interface ScanHistoryItem {

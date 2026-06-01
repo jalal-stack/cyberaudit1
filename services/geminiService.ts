@@ -162,9 +162,9 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
         }
     }
     
-    let rawTechnologies: string[] = [];
-    if (res.cms && res.cms.detected) {
-        rawTechnologies = res.cms.detected.filter((t: string) => t !== "None Detected");
+    let rawTechnologies: Record<string, string[]> = {};
+    if (res.cms && res.cms.categories) {
+        rawTechnologies = res.cms.categories;
     }
     
     return {
