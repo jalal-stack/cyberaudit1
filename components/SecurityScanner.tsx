@@ -336,24 +336,29 @@ export const SecurityScanner: React.FC<{
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {Object.entries(results.rawTechnologies).map(([category, techs], idx) => (
+                        {Object.entries(results.rawTechnologies).map(([category, techs], idx) => {
+                             const translatedCategory = t(`scanner.techCategories.${category}`);
+                             const displayCategory = translatedCategory && translatedCategory !== `scanner.techCategories.${category}` ? translatedCategory : category;
+                             return (
                              <div key={idx} className="space-y-4">
-                                <h4 className="text-[17px] font-semibold text-slate-300">{category}</h4>
+                                <h4 className="text-[17px] font-semibold text-slate-300">{displayCategory}</h4>
                                 <div className="space-y-3">
-                                    {techs.map((tech, techIdx) => (
+                                    {techs.map((tech, techIdx) => {
+                                        const translatedTech = tech === "None Detected" ? t("scanner.techCategories.None") : tech;
+                                        return (
                                         <div key={techIdx} className="flex items-center bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-800/50 group hover:bg-slate-800 transition-colors">
                                             {/* Generic app icon representation */}
                                             <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center mr-3 shrink-0">
-                                                <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{tech.substring(0,1).toUpperCase()}</span>
+                                                <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{translatedTech.substring(0,1).toUpperCase()}</span>
                                             </div>
                                             <span className="text-slate-200 group-hover:text-white transition-colors font-medium text-sm">
-                                                {tech}
+                                                {translatedTech}
                                             </span>
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                              </div>
-                        ))}
+                        ); })} 
                     </div>
                 </div>
             )}
