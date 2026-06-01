@@ -99,7 +99,7 @@ const translations = {
         ssl: "Анализ SSL/HTTPS",
         ports: "Сканирование портов",
         headers: "HTTP заголовки безопасности",
-        cms: "CMS и уязвимости",
+        cms: "Технологии & CMS (на базе Wappalyzer)",
         leaks: "Проверка утечек данных",
         ddos: "DDoS защита",
       },
@@ -133,7 +133,7 @@ const translations = {
       warn: "ПРЕДУПРЕЖДЕНИЕ",
     },
     errors: {
-      geminiFetchFailed: "Не удалось получить отчет о безопасности от ИИ. Пожалуйста, попробуйте еще раз.",
+      geminiFetchFailed: "Не удалось подключиться к серверу API (возможно, бесплатный сервер на Render.com запускается, подождите 1-2 минуты и попробуйте снова).",
     },
     gemini: {
       analysisNotGeneratedSummary: "Анализ для этого типа сканирования не был сгенерирован.",
@@ -242,7 +242,7 @@ const translations = {
         ssl: "SSL/HTTPS tahlili",
         ports: "Portlarni skanerlash",
         headers: "HTTP xavfsizlik sarlavhalari",
-        cms: "CMS va zaifliklar",
+        cms: "Texnologiyalar va CMS (Wappalyzer asosida)",
         leaks: "Ma'lumotlar sizib chiqishini tekshirish",
         ddos: "DDoS himoyasi",
       },
@@ -276,7 +276,7 @@ const translations = {
       warn: "OGOHLANTIRISH",
     },
     errors: {
-      geminiFetchFailed: "Sun'iy intellektdan xavfsizlik hisobotini olishning iloji bo'lmadi. Iltimos, qaytadan urunib ko'ring.",
+      geminiFetchFailed: "API serveriga ulanib bo'lmadi (ehtimol, Render.com dagi bepul server ishga tushirilyapti, 1-2 daqiqa kuting va qayta urinib ko'ring).",
     },
     gemini: {
       analysisNotGeneratedSummary: "Ushbu turdagi skanerlash uchun tahlil yaratilmadi.",

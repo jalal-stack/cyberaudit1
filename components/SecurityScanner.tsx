@@ -289,7 +289,14 @@ export const SecurityScanner: React.FC<{
       setResults(auditResults);
       onScanComplete(url, auditResults);
     } catch (err: any) {
-      setError(t(err.message) || t('errors.geminiFetchFailed'));
+      const msg = err.message || '';
+      const translated = t(msg);
+      if (translated === msg && msg !== '') {
+         // The translation key wasn't found, so it just returned the raw error (e.g. "Failed to fetch"). Use fallback.
+         setError(t('errors.geminiFetchFailed'));
+      } else {
+         setError(translated || t('errors.geminiFetchFailed'));
+      }
     } finally {
       setIsLoading(false);
     }

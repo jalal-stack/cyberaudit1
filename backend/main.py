@@ -34,7 +34,7 @@ app = FastAPI(title="CyberAudit API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # In production, restrict this to your Vercel frontend URL
-    allow_credentials=True,
+    allow_credentials=False, # Must be False if allow_origins is ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -115,18 +115,54 @@ def scan_dns_whois(domain: str):
 def scan_cms(domain: str):
     try:
         url = f"https://{domain}"
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=5, allow_redirects=True)
         html = response.text.lower()
-        headers = str(response.headers).lower()
-        cms = []
-        if 'wp-content' in html or 'wordpress' in html: cms.append("WordPress")
-        if 'shopify.com' in html or 'shopify' in headers: cms.append("Shopify")
-        if 'joomla' in html: cms.append("Joomla")
-        if 'drupal' in html or 'drupal' in headers: cms.append("Drupal")
-        if 'laravel' in headers or 'laravel_session' in response.cookies.keys(): cms.append("Laravel")
-        if '_next' in html or 'next.js' in html: cms.append("Next.js")
+        headers = {k.lower(): v.lower() for k, v in response.headers.items()}
+        cookies = response.cookies.get_dict()
         
-        return {"detected": cms if cms else ["None Detected"]}
+        tech_stack = []
+        
+        # CMS & E-commerce
+        if 'wp-content' in html or 'wordpress' in html: tech_stack.append("WordPress")
+        if 'shopify.com' in html or 'shopify' in headers.get('x-shopid', '') or '_s' in cookies: tech_stack.append("Shopify")
+        if 'joomla' in html: tech_stack.append("Joomla")
+        if 'drupal' in html or 'x-generator' in headers and 'drupal' in headers['x-generator']: tech_stack.append("Drupal")
+        if 'magento' in html or 'frontend' in cookies: tech_stack.append("Magento")
+        if 'bitrix' in html or 'bitrix_sm' in cookies: tech_stack.append("1C-Bitrix")
+
+        # Frameworks
+        if 'laravel' in str(headers) or 'laravel_session' in cookies: tech_stack.append("Laravel")
+        if '_next' in html or 'next.js' in html: tech_stack.append("Next.js")
+        if 'nuxt' in html or '_nuxt' in html: tech_stack.append("Nuxt.js")
+        if 'react' in html or 'data-reactroot' in html: tech_stack.append("React")
+        if 'ng-app' in html or 'angular' in html: tech_stack.append("Angular")
+        if 'vue' in html or 'data-v-' in html: tech_stack.append("Vue.js")
+        if 'django' in html or 'csrftoken' in cookies: tech_stack.append("Django")
+        if 'x-powered-by' in headers and 'express' in headers['x-powered-by']: tech_stack.append("Express")
+
+        # Web Servers
+        server = headers.get('server', '')
+        if 'nginx' in server: tech_stack.append("Nginx")
+        if 'apache' in server: tech_stack.append("Apache")
+        if 'cloudflare' in server: tech_stack.append("Cloudflare")
+        if 'litespeed' in server: tech_stack.append("LiteSpeed")
+
+        # Programming Languages
+        if 'x-powered-by' in headers:
+            powered_by = headers['x-powered-by']
+            if 'php' in powered_by: tech_stack.append("PHP")
+            if 'asp.net' in powered_by: tech_stack.append("ASP.NET")
+            if 'python' in powered_by: tech_stack.append("Python")
+
+        if 'phpsessid' in cookies: tech_stack.append("PHP")
+        
+        # Analytics & Tools
+        if 'google-analytics.com' in html or 'gtag' in html: tech_stack.append("Google Analytics")
+        if 'yandex.ru/metrika' in html or 'mc.yandex.ru' in html: tech_stack.append("Yandex Metrika")
+        
+        tech_stack = list(set(tech_stack)) # Remove duplicates
+        
+        return {"detected": tech_stack if tech_stack else ["None Detected"]}
     except Exception as e:
         return {"error": str(e)}
 
