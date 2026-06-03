@@ -139,11 +139,46 @@ def scan_dns_whois(domain: str):
     try:
         w = whois.whois(domain)
         ip = get_ip_from_domain(domain)
+        
+        country = None
+        if isinstance(w, dict) and 'country' in w:
+            country = w.get('country')
+        elif hasattr(w, 'country'):
+            country = w.country
+            
+        if isinstance(country, list):
+            country = country[0] if country else None
+            
+        if ip and (not country or len(str(country)) < 2 or str(country).lower() == 'none'):
+            try:
+                geo_resp = requests.get(f"http://ip-api.com/json/{ip}", timeout=3)
+                if geo_resp.status_code == 200:
+                    api_country = geo_resp.json().get("country")
+                    if api_country:
+                        country = api_country
+            except:
+                pass
+                
+        registrar = None
+        if isinstance(w, dict) and 'registrar' in w:
+            registrar = w.get('registrar')
+        elif hasattr(w, 'registrar'):
+            registrar = w.registrar
+            
+        if isinstance(registrar, list):
+            registrar = registrar[0] if registrar else None
+            
+        nameservers = None
+        if isinstance(w, dict) and 'name_servers' in w:
+            nameservers = w.get('name_servers')
+        elif hasattr(w, 'name_servers'):
+            nameservers = w.name_servers
+
         return {
             "ip": ip,
-            "registrar": w.registrar if hasattr(w, 'registrar') else None,
-            "nameservers": w.name_servers if hasattr(w, 'name_servers') else None,
-            "country": w.country if hasattr(w, 'country') else None
+            "registrar": registrar,
+            "nameservers": nameservers,
+            "country": country
         }
     except Exception as e:
         return {"error": str(e)}
@@ -299,6 +334,7 @@ def generate_ai_summary(domain, results, score, risk_level, language):
         Results: {results}
         
         Provide a professional security analysis, highlighting detected risks, missing protections, and actionable recommendations.
+        IMPORTANT: Your entire response (summary, title, status, detailed description, recommendation) MUST BE STRICTLY AND COMPLETELY WRITTEN IN {language}.
         Format your response STRICTLY as valid JSON with the following structure:
         {{
             "score": <integer 0-100>,
