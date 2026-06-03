@@ -107,6 +107,13 @@ const translations = {
       scanningButton: "Сканирование...",
       resultsFor: "Результаты для",
       technologiesLabel: "Технологии & CMS (Аналог Wappalyzer)",
+      dnsLabels: {
+        title: "Подробная информация о домене (DNS/WHOIS)",
+        ip: "IP Адрес",
+        registrar: "Регистратор",
+        nameservers: "Серверы Имен",
+        country: "Страна",
+      },
       techCategories: {
         "CMS": "CMS (Система управления контентом)",
         "Frameworks": "Фреймворки",
@@ -265,6 +272,13 @@ const translations = {
       scanningButton: "Skanerlanmoqda...",
       resultsFor: "uchun natijalar",
       technologiesLabel: "Texnologiyalar va CMS (Wappalyzer Analog)",
+      dnsLabels: {
+        title: "Domen haqida batafsil ma'lumot (DNS/WHOIS)",
+        ip: "IP Manzil",
+        registrar: "Registrator",
+        nameservers: "Nom serverlari (Nameservers)",
+        country: "Mamlakat",
+      },
       techCategories: {
         "CMS": "CMS (Kontentni Boshqarish Tizimi)",
         "Frameworks": "Freymvorklar",

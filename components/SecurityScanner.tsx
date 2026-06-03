@@ -328,6 +328,50 @@ export const SecurityScanner: React.FC<{
             </div>
             <OverallScore score={results.overallScore} summary={results.summary} t={t} />
             
+            {!!results.rawDnsWhois && Object.keys(results.rawDnsWhois).length > 0 && !results.rawDnsWhois.error && (
+                <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
+                    <div className="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
+                        <GlobeIcon className="h-6 w-6 text-green-400" />
+                        <h3 className="text-2xl font-bold text-white">{t('scanner.dnsLabels.title') || "Domain Information (DNS/WHOIS)"}</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {results.rawDnsWhois.ip && (
+                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800/50 flex flex-col">
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('scanner.dnsLabels.ip')}</span>
+                                <span className="text-base text-white font-medium">{results.rawDnsWhois.ip}</span>
+                            </div>
+                        )}
+                        {results.rawDnsWhois.registrar && (
+                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800/50 flex flex-col">
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('scanner.dnsLabels.registrar')}</span>
+                                <span className="text-base text-white font-medium break-all">{results.rawDnsWhois.registrar}</span>
+                            </div>
+                        )}
+                        {results.rawDnsWhois.country && (
+                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800/50 flex flex-col">
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('scanner.dnsLabels.country')}</span>
+                                <span className="text-base text-white font-medium">{results.rawDnsWhois.country}</span>
+                            </div>
+                        )}
+                        {results.rawDnsWhois.nameservers && (
+                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800/50 flex flex-col">
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('scanner.dnsLabels.nameservers')}</span>
+                                <div className="text-sm text-white font-medium">
+                                    {Array.isArray(results.rawDnsWhois.nameservers) ? (
+                                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                                            {results.rawDnsWhois.nameservers.map((ns: string, i: number) => <li key={i} className="break-all">{ns}</li>)}
+                                        </ul>
+                                    ) : (
+                                        <span className="break-all">{String(results.rawDnsWhois.nameservers)}</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            
             {results.rawTechnologies && Object.keys(results.rawTechnologies).length > 0 && (
                 <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
                     <div className="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
