@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ScanResults, ScanId, ScanOption, ScanStatus, ScanResultItem, ScanHistoryItem } from '../types';
 import { runSecurityAudit } from '../services/geminiService';
-import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon } from './icons';
+import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon, BugIcon } from './icons';
 import { useTranslation, Language } from '../App';
 
 const ScanTypeOption: React.FC<{ option: ScanOption; isChecked: boolean; onChange: (id: ScanId) => void; }> = ({ option, isChecked, onChange }) => {
@@ -327,6 +327,73 @@ export const SecurityScanner: React.FC<{
                 </button>
             </div>
             <OverallScore score={results.overallScore} summary={results.summary} t={t} />
+            
+            {!!results.rawVulnerabilities && Object.keys(results.rawVulnerabilities).length > 0 && !results.rawVulnerabilities.error && (
+                <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
+                    <div className="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
+                        <BugIcon className="h-6 w-6 text-red-500" />
+                        <h3 className="text-2xl font-bold text-white">{t('scanner.vulnLabels.title') || "Code Vulnerabilities (XSS / SQLi)"}</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {results.rawVulnerabilities.xss && (
+                            <div className={`p-5 rounded-xl border ${results.rawVulnerabilities.xss.vulnerable ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col`}>
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.xss.vulnerable ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
+                                    <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.xssTitle') || "Cross-Site Scripting (XSS)"}</span>
+                                </div>
+                                <p className={`text-sm ${results.rawVulnerabilities.xss.vulnerable ? 'text-red-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.xss.details}
+                                </p>
+                            </div>
+                        )}
+                        {results.rawVulnerabilities.sqli && (
+                            <div className={`p-5 rounded-xl border ${results.rawVulnerabilities.sqli.vulnerable ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col`}>
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.sqli.vulnerable ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
+                                    <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.sqliTitle') || "SQL Injection (SQLi)"}</span>
+                                </div>
+                                <p className={`text-sm ${results.rawVulnerabilities.sqli.vulnerable ? 'text-red-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.sqli.details}
+                                </p>
+                            </div>
+                        )}
+                        {results.rawVulnerabilities.cors && (
+                            <div className={`p-5 rounded-xl border ${results.rawVulnerabilities.cors.vulnerable ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col`}>
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.cors.vulnerable ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
+                                    <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.corsTitle') || "CORS Policy"}</span>
+                                </div>
+                                <p className={`text-sm ${results.rawVulnerabilities.cors.vulnerable ? 'text-red-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.cors.details}
+                                </p>
+                            </div>
+                        )}
+                        {results.rawVulnerabilities.files && (
+                            <div className={`p-5 rounded-xl border ${results.rawVulnerabilities.files.vulnerable ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col`}>
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.files.vulnerable ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
+                                    <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.filesTitle') || "Sensitive Files Leakage"}</span>
+                                </div>
+                                <p className={`text-sm ${results.rawVulnerabilities.files.vulnerable ? 'text-red-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.files.details}
+                                </p>
+                            </div>
+                        )}
+                        {results.rawVulnerabilities.admin && (
+                            <div className={`p-5 rounded-xl border ${results.rawVulnerabilities.admin.found?.length > 0 ? 'bg-yellow-900/20 border-yellow-500/50' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col`}>
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.admin.found?.length > 0 ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
+                                    <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.adminTitle') || "Open Admin Panels"}</span>
+                                </div>
+                                <p className={`text-sm ${results.rawVulnerabilities.admin.found?.length > 0 ? 'text-yellow-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.admin.details}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             
             {!!results.rawDnsWhois && Object.keys(results.rawDnsWhois).length > 0 && !results.rawDnsWhois.error && (
                 <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">

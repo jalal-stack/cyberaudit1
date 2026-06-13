@@ -172,12 +172,18 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
         rawDnsWhois = res.dns_whois;
     }
     
+    let rawVulnerabilities: Record<string, any> = {};
+    if (res.vulnerabilities) {
+        rawVulnerabilities = res.vulnerabilities;
+    }
+    
     return {
         overallScore: overallScore,
         summary: summaryText,
         details: details,
         rawTechnologies: rawTechnologies,
-        rawDnsWhois: rawDnsWhois
+        rawDnsWhois: rawDnsWhois,
+        rawVulnerabilities: rawVulnerabilities
     } as ScanResults;
 
   } catch (error) {

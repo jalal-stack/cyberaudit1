@@ -35,6 +35,7 @@ export interface ScanResults {
   details: ScanResultItem[];
   rawTechnologies?: Record<string, string[]>;
   rawDnsWhois?: Record<string, any>;
+  rawVulnerabilities?: Record<string, any>;
 }
 
 export interface ScanHistoryItem {

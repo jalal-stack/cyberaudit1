@@ -114,6 +114,16 @@ const translations = {
         nameservers: "Серверы Имен",
         country: "Страна",
       },
+      vulnLabels: {
+        title: "Уязвимости и Разведка (XSS / SQLi / CORS / Файлы)",
+        xssTitle: "Межсайтовый скриптинг (XSS)",
+        sqliTitle: "Внедрение SQL-кода (SQLi)",
+        corsTitle: "Политика CORS",
+        filesTitle: "Утечка чувствительных файлов",
+        adminTitle: "Открытые админ-панели",
+        vulnerable: "Уязвимость обнаружена",
+        secure: "Защищено",
+      },
       techCategories: {
         "CMS": "CMS (Система управления контентом)",
         "Frameworks": "Фреймворки",
@@ -278,6 +288,16 @@ const translations = {
         registrar: "Registrator",
         nameservers: "Nom serverlari (Nameservers)",
         country: "Mamlakat",
+      },
+      vulnLabels: {
+        title: "Zaifliklar va Razvedka (XSS / SQLi / CORS / Fayllar)",
+        xssTitle: "Saytlararo skripting (XSS)",
+        sqliTitle: "SQL inyektsiya (SQLi)",
+        corsTitle: "CORS Siyosati",
+        filesTitle: "Nozik fayllar sizib chiqishi",
+        adminTitle: "Ochiq admin panellar",
+        vulnerable: "Zaiflik topildi",
+        secure: "Himoyalangan",
       },
       techCategories: {
         "CMS": "CMS (Kontentni Boshqarish Tizimi)",

@@ -93,6 +93,20 @@ export const LoaderIcon: React.FC<{ className?: string }> = (props) => (
     </svg>
 );
 
+export const BugIcon: React.FC<{ className?: string }> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M8 2v4"></path>
+        <path d="M16 2v4"></path>
+        <path d="M11 15h2"></path>
+        <path d="M11 11h2"></path>
+        <path d="M22 13h-4"></path>
+        <path d="M6 13H2"></path>
+        <path d="M20 18h-3"></path>
+        <path d="M7 18H4"></path>
+        <rect width="10" height="14" x="7" y="6" rx="5" ry="5"></rect>
+    </svg>
+);
+
 export const AwardIcon: React.FC<{ className?: string }> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <circle cx="12" cy="8" r="6"></circle>

@@ -289,6 +289,135 @@ def scan_ports(ip: str):
             pass
     return {"open": open_ports, "closed": closed_ports}
 
+def scan_vulnerabilities(domain: str):
+    """
+    Very lightweight capability check for XSS and SQLi, plus CORS, sensitive files and admin panels.
+    """
+    try:
+        results = {
+            "xss": {"vulnerable": False, "details": "No generic XSS reflection found."},
+            "sqli": {"vulnerable": False, "details": "No standard SQL syntax errors detected in response."},
+            "cors": {"vulnerable": False, "details": "CORS policy seems restrictive."},
+            "files": {"vulnerable": False, "found": [], "details": "No obvious sensitive files exposed."},
+            "admin": {"vulnerable": False, "found": [], "details": "No standard admin panels detected."}
+        }
+        
+        # Test CORS
+        try:
+            url_cors = f"https://{domain}"
+            test_origin = "https://evil.com"
+            headers = {"Origin": test_origin}
+            resp_cors = requests.get(url_cors, headers=headers, timeout=5, allow_redirects=True)
+            allow_origin = resp_cors.headers.get("Access-Control-Allow-Origin")
+            if allow_origin == "*" or allow_origin == test_origin:
+                results["cors"]["vulnerable"] = True
+                results["cors"]["details"] = f"CORS misconfigured. Returns 'Access-Control-Allow-Origin: {allow_origin}'."
+        except:
+            pass
+
+        # Test Sensitive Files
+        files_to_check = [".env", ".git/config", "docker-compose.yml"]
+        found_files = []
+        for file in files_to_check:
+            try:
+                url_file = f"https://{domain}/{file}"
+                resp_file = requests.get(url_file, timeout=3, allow_redirects=False)
+                if resp_file.status_code == 200:
+                    text = resp_file.text.lower()
+                    if "<html" in text:
+                        continue
+                    if file == ".env" and ("db_" in text or "app_key" in text or "=" in text):
+                        found_files.append(file)
+                    elif file == ".git/config" and "[core]" in text:
+                        found_files.append(file)
+                    elif file == "docker-compose.yml" and "version:" in text:
+                        found_files.append(file)
+                    elif len(resp_file.text) > 0 and not text.strip().startswith("<"):
+                        found_files.append(file)
+            except:
+                pass
+        if found_files:
+            results["files"]["vulnerable"] = True
+            results["files"]["found"] = found_files
+            results["files"]["details"] = f"Exposed sensitive files: {', '.join(found_files)}"
+            
+        # Test Admin Panels
+        panels = ["admin", "wp-admin", "login", "dashboard"]
+        found_panels = []
+        for panel in panels:
+            try:
+                url_panel = f"https://{domain}/{panel}"
+                resp_panel = requests.get(url_panel, timeout=3, allow_redirects=True)
+                if resp_panel.status_code == 200:
+                    text_lower = resp_panel.text.lower()
+                    if "password" in text_lower or "login" in text_lower or "пароль" in text_lower or "войти" in text_lower or panel in text_lower:
+                        found_panels.append(f"/{panel}")
+            except:
+                pass
+        if found_panels:
+            # Having an admin panel is not strictly a vulnerability, but it increases attack surface (brute-force).
+            # We flag it as informational or a risk to be aware of.
+            results["admin"]["found"] = found_panels
+            results["admin"]["details"] = f"Found admin/login paths: {', '.join(found_panels)}"
+
+        # Test XSS
+        xss_payload = '"><script>console.log("xss_test_1337")</script>'
+        url_xss = f"https://{domain}/?search={xss_payload}&q={xss_payload}"
+        try:
+            resp_xss = requests.get(url_xss, timeout=5, allow_redirects=True)
+            text_lower = resp_xss.text.lower()
+            
+            xss_reasons = []
+            if xss_payload.lower() in text_lower:
+                xss_reasons.append("Input reflection (payload found entirely in response)")
+                
+            headers_lower = {k.lower(): v.lower() for k, v in resp_xss.headers.items()}
+            if 'content-security-policy' not in headers_lower:
+                xss_reasons.append("Missing Content-Security-Policy (CSP) header")
+                
+            if 'x-xss-protection' in headers_lower and headers_lower['x-xss-protection'] == '0':
+                xss_reasons.append("X-XSS-Protection is explicitly disabled")
+                
+            if xss_reasons:
+                if len(xss_reasons) > 1 or "Input reflection" in xss_reasons[0]:
+                    results["xss"]["vulnerable"] = True
+                else:
+                    results["xss"]["details"] = "Low/Moderate Risk: " + ", ".join(xss_reasons)
+                
+                if results["xss"]["vulnerable"]:
+                    results["xss"]["details"] = "Potential XSS found: " + ", ".join(xss_reasons)
+        except:
+            pass
+
+        # Test SQLi
+        sqli_payload = "'"
+        url_sqli = f"https://{domain}/?id={sqli_payload}&page={sqli_payload}&query={sqli_payload}"
+        try:
+            resp_sqli = requests.get(url_sqli, timeout=5, allow_redirects=True)
+            sql_errors = [
+                "you have an error in your sql syntax",
+                "warning: mysql",
+                "unclosed quotation mark after the character string",
+                "quoted string not properly terminated",
+                "pg_query(): query failed",
+                "sqlite3.operationerror",
+                "sql syntax error",
+                "mysql_fetch",
+                "ora-01756",
+            ]
+            response_lower = resp_sqli.text.lower()
+            for err in sql_errors:
+                if err in response_lower:
+                    results["sqli"]["vulnerable"] = True
+                    results["sqli"]["details"] = f"Potential SQL Injection found: Database error message detected ('{err}')."
+                    break
+        except:
+            pass
+            
+        return results
+    except Exception as e:
+        return {"error": str(e)}
+
 def calculate_score(results: dict):
     score = 100
     ssl_data = results.get("ssl", {})
@@ -308,6 +437,19 @@ def calculate_score(results: dict):
     ddos_data = results.get("ddos", {})
     if not ddos_data.get("protected"):
         score -= 15 # Heavily penalize the lack of DDoS protection
+
+    vuln_data = results.get("vulnerabilities", {})
+    if vuln_data.get("xss", {}).get("vulnerable"):
+        score -= 15
+    if vuln_data.get("sqli", {}).get("vulnerable"):
+        score -= 25
+    if vuln_data.get("cors", {}).get("vulnerable"):
+        score -= 10
+    if vuln_data.get("files", {}).get("vulnerable"):
+        score -= 20
+    # Admin panels are more informational, maybe -0 or -2
+    if vuln_data.get("admin", {}).get("found"):
+        score -= 2
 
     score = max(0, min(100, score))
     
@@ -414,6 +556,7 @@ def run_scan(domain: str = Query(..., description="Domain without protocol"), la
     results["cms"] = scan_cms(domain)
     results["ports"] = scan_ports(ip)
     results["ddos"] = scan_ddos(domain, resp_headers, resp_server, resp_cookies)
+    results["vulnerabilities"] = scan_vulnerabilities(domain)
     
     score, risk_level = calculate_score(results)
     

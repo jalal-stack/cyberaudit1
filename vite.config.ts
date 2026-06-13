@@ -8,15 +8,7 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 3000,
-        host: '0.0.0.0',
-        proxy: {
-          '/api/backend': {
-            target: 'https://cyberaudit1.onrender.com',
-            changeOrigin: true,
-            secure: false,
-            rewrite: (path) => path.replace(/^\/api\/backend/, '')
-          }
-        }
+        host: '0.0.0.0'
       },
       plugins: [
         react(),
