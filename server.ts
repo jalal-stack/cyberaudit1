@@ -364,12 +364,12 @@ async function startServer() {
     
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `Act as a Senior Cybersecurity Analyst. Analyze the following scan results for ${domain}.
+      const prompt = `Act as an AI Professional Master Tester (QA & Security Penetration Testing Expert). Analyze the following scan results for ${domain}.
 Score: ${score}/100
 Risk Level: ${riskLevel}
 Results: ${JSON.stringify(results)}
 
-Provide a professional security analysis, highlighting detected risks, missing protections, and actionable recommendations.
+Provide a deeply professional and comprehensive security and QA analysis. Highlight detected vulnerabilities, configuration flaws, missing protections, and provide actionable, step-by-step technical recommendations for developers and system administrators. Your tone should be authoritative, analytical, and highly structured, like a Master of QA and Cybersecurity.
 IMPORTANT: Your entire response (summary, title, status, detailed description, recommendation) MUST BE STRICTLY AND COMPLETELY WRITTEN IN ${language}.
 Format your response STRICTLY as valid JSON with the following structure:
 {
