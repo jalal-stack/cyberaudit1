@@ -375,29 +375,9 @@ export const SecurityScanner: React.FC<{
                                     <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.files.vulnerable ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
                                     <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.filesTitle') || "Sensitive Files Leakage"}</span>
                                 </div>
-                                {results.rawVulnerabilities.files.found?.length > 0 ? (
-                                    <div className="flex flex-col space-y-2 mt-2">
-                                        <span className="text-sm text-red-300 font-medium">
-                                            {results.rawVulnerabilities.files.details.split(': ')[0]}:
-                                        </span>
-                                        <div className="flex flex-wrap gap-2 text-sm">
-                                            {results.rawVulnerabilities.files.found.map((path: string, i: number) => {
-                                                const filePrefix = path.startsWith('/') ? path : `/${path}`;
-                                                const cleanDomain = results.domain?.replace(/^https?:\/\//i, '').split('/')[0] || '';
-                                                const url = `https://${cleanDomain}${filePrefix}`;
-                                                return (
-                                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-200 border border-red-500/30 rounded text-sm transition-colors decoration-transparent">
-                                                        {filePrefix}
-                                                    </a>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className={`text-sm ${results.rawVulnerabilities.files.vulnerable ? 'text-red-300 font-medium' : 'text-slate-400'}`}>
-                                        {results.rawVulnerabilities.files.details}
-                                    </p>
-                                )}
+                                <p className={`text-sm ${results.rawVulnerabilities.files.vulnerable ? 'text-red-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.files.details}
+                                </p>
                             </div>
                         )}
                         {results.rawVulnerabilities.admin && (
@@ -406,29 +386,9 @@ export const SecurityScanner: React.FC<{
                                     <div className={`w-3 h-3 rounded-full ${results.rawVulnerabilities.admin.found?.length > 0 ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.6)]' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]'}`}></div>
                                     <span className="text-base font-semibold text-white">{t('scanner.vulnLabels.adminTitle') || "Open Admin Panels"}</span>
                                 </div>
-                                {results.rawVulnerabilities.admin.found?.length > 0 ? (
-                                    <div className="flex flex-col space-y-2 mt-2">
-                                        <span className="text-sm text-yellow-300 font-medium">
-                                            {results.rawVulnerabilities.admin.details.split(': ')[0]}:
-                                        </span>
-                                        <div className="flex flex-wrap gap-2 text-sm">
-                                            {results.rawVulnerabilities.admin.found.map((path: string, i: number) => {
-                                                const filePrefix = path.startsWith('/') ? path : `/${path}`;
-                                                const cleanDomain = results.domain?.replace(/^https?:\/\//i, '').split('/')[0] || '';
-                                                const url = `https://${cleanDomain}${filePrefix}`;
-                                                return (
-                                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-200 border border-yellow-500/30 rounded text-sm transition-colors decoration-transparent">
-                                                        {filePrefix}
-                                                    </a>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className={`text-sm ${results.rawVulnerabilities.admin.found?.length > 0 ? 'text-yellow-300 font-medium' : 'text-slate-400'}`}>
-                                        {results.rawVulnerabilities.admin.details}
-                                    </p>
-                                )}
+                                <p className={`text-sm ${results.rawVulnerabilities.admin.found?.length > 0 ? 'text-yellow-300 font-medium' : 'text-slate-400'}`}>
+                                    {results.rawVulnerabilities.admin.details}
+                                </p>
                             </div>
                         )}
                     </div>

@@ -181,8 +181,47 @@ async function startServer() {
     return { categories: Object.keys(categories).length ? categories : { "None": ["None Detected"] } };
   }
 
+  function extractInternalPaths(html: string, domain: string) {
+    const paths = new Set<string>();
+    paths.add("/");
+    
+    // Common sensible paths
+    paths.add("/login");
+    paths.add("/cart");
+    paths.add("/checkout");
+    paths.add("/profile");
+    paths.add("/search");
+    paths.add("/admin");
+    paths.add("/api");
+    
+    const regex = /href=["']([^"']+)["']/gi;
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      let link = match[1];
+      if (link.startsWith('http://') || link.startsWith('https://')) {
+        if (link.includes(domain)) {
+          try {
+             let url = new URL(link);
+             paths.add(url.pathname + url.search);
+          } catch(e){}
+        }
+      } else if (link.startsWith('/')) {
+        paths.add(link);
+      }
+    }
+    
+    // Sort so paths with parameters come first (more likely to be vulnerable to XSS/SQLi)
+    return Array.from(paths).sort((a, b) => {
+       const aHasQ = a.includes('?');
+       const bHasQ = b.includes('?');
+       if (aHasQ && !bHasQ) return -1;
+       if (!aHasQ && bHasQ) return 1;
+       return 0;
+    }).slice(0, 10);
+  }
+
   // Vulnerability Scan
-  async function scanVulnerabilities(domain: string) {
+  async function scanVulnerabilities(domain: string, paths: string[]) {
     const results = {
       xss: { vulnerable: false, details: "No generic XSS reflection found." },
       sqli: { vulnerable: false, details: "No standard SQL syntax errors detected in response." },
@@ -193,7 +232,7 @@ async function startServer() {
     
     // CORS
     try {
-      const resp = await fetch(`https://${domain}`, { headers: { "Origin": "https://evil.com" }, redirect: "follow" });
+      const resp = await fetch(`https://${domain}`, { headers: { "Origin": "https://evil.com" }, redirect: "follow", timeout: 4000 });
       const allowOrigin = resp.headers.get("access-control-allow-origin");
       if (allowOrigin === "*" || allowOrigin === "https://evil.com") {
         results.cors.vulnerable = true;
@@ -205,7 +244,7 @@ async function startServer() {
     const filesToCheck = [".env", ".git/config", "docker-compose.yml"];
     for (const file of filesToCheck) {
       try {
-        const resp = await fetch(`https://${domain}/${file}`, { redirect: "manual" });
+        const resp = await fetch(`https://${domain}/${file}`, { redirect: "manual", timeout: 3000 });
         if (resp.status === 200) {
           const text = (await resp.text()).toLowerCase();
           if (text.includes("<html")) continue;
@@ -222,10 +261,10 @@ async function startServer() {
     }
 
     // Admin
-    const panels = ["admin", "wp-admin", "login", "dashboard"];
+    const panels = ["admin", "wp-admin", "login", "dashboard", "manager"];
     for (const panel of panels) {
       try {
-        const resp = await fetch(`https://${domain}/${panel}`, { redirect: "follow" });
+        const resp = await fetch(`https://${domain}/${panel}`, { redirect: "follow", timeout: 3000 });
         if (resp.status === 200) {
           const text = (await resp.text()).toLowerCase();
           if (text.includes("password") || text.includes("login") || text.includes("пароль") || text.includes("войти") || text.includes(panel)) {
@@ -240,38 +279,52 @@ async function startServer() {
 
     // XSS
     const xssPayload = '"><script>console.log("xss_test_1337")</script>';
-    try {
-      const resp = await fetch(`https://${domain}/?search=${encodeURIComponent(xssPayload)}&q=${encodeURIComponent(xssPayload)}`);
-      const text = (await resp.text()).toLowerCase();
-      const reasons = [];
-      if (text.includes(xssPayload.toLowerCase())) reasons.push("Input reflection (payload found entirely in response)");
-      
-      const csp = resp.headers.get("content-security-policy");
-      if (!csp) reasons.push("Missing Content-Security-Policy (CSP) header");
-      
-      const xssProtect = resp.headers.get("x-xss-protection");
-      if (xssProtect === "0") reasons.push("X-XSS-Protection is explicitly disabled");
-      
-      if (reasons.length > 0) {
-        if (reasons.length > 1 || reasons[0].includes("Input reflection")) results.xss.vulnerable = true;
-        results.xss.details = (results.xss.vulnerable ? "Potential XSS found: " : "Low/Moderate Risk: ") + reasons.join(", ");
-      }
-    } catch(e) {}
+    for (const path of paths) {
+      try {
+        const sep = path.includes('?') ? '&' : '?';
+        const url = `https://${domain}${path}${sep}search=${encodeURIComponent(xssPayload)}&q=${encodeURIComponent(xssPayload)}`;
+        const resp = await fetch(url, { redirect: "follow", timeout: 3000 });
+        const text = (await resp.text()).toLowerCase();
+        const reasons = [];
+        if (text.includes(xssPayload.toLowerCase())) reasons.push("Input reflection (payload found entirely in response)");
+        
+        const csp = resp.headers.get("content-security-policy");
+        if (!csp) reasons.push("Missing Content-Security-Policy (CSP) header");
+        
+        const xssProtect = resp.headers.get("x-xss-protection");
+        if (xssProtect === "0") reasons.push("X-XSS-Protection is explicitly disabled");
+        
+        if (reasons.length > 0) {
+          if (reasons.length > 1 || reasons[0].includes("Input reflection")) {
+            results.xss.vulnerable = true;
+            results.xss.details = `Potential XSS found on ${path}: ` + reasons.join(", ");
+            break; // Stop at first vulnerable path
+          } else if (!results.xss.vulnerable) {
+            results.xss.details = `Low/Moderate Risk on ${path}: ` + reasons.join(", ");
+          }
+        }
+      } catch(e) {}
+    }
 
     // SQLi
     const sqliPayload = "'";
-    try {
-      const resp = await fetch(`https://${domain}/?id=${encodeURIComponent(sqliPayload)}&page=${encodeURIComponent(sqliPayload)}`);
-      const text = (await resp.text()).toLowerCase();
-      const sqlErrors = ["you have an error in your sql syntax", "warning: mysql", "unclosed quotation mark after the character string", "quoted string not properly terminated", "pg_query(): query failed", "sqlite3.operationerror", "sql syntax error", "mysql_fetch", "ora-01756"];
-      for (const err of sqlErrors) {
-        if (text.includes(err)) {
-          results.sqli.vulnerable = true;
-          results.sqli.details = `Potential SQL Injection found: Database error message detected ('${err}').`;
-          break;
+    for (const path of paths) {
+      try {
+        const sep = path.includes('?') ? '&' : '?';
+        const url = `https://${domain}${path}${sep}id=${encodeURIComponent(sqliPayload)}&page=${encodeURIComponent(sqliPayload)}&query=${encodeURIComponent(sqliPayload)}`;
+        const resp = await fetch(url, { redirect: "follow", timeout: 3000 });
+        const text = (await resp.text()).toLowerCase();
+        const sqlErrors = ["you have an error in your sql syntax", "warning: mysql", "unclosed quotation mark after the character string", "quoted string not properly terminated", "pg_query(): query failed", "sqlite3.operationerror", "sql syntax error", "mysql_fetch", "ora-01756"];
+        for (const err of sqlErrors) {
+          if (text.includes(err)) {
+            results.sqli.vulnerable = true;
+            results.sqli.details = `Potential SQL Injection found on ${path}: Database error message detected ('${err}').`;
+            break;
+          }
         }
-      }
-    } catch(e) {}
+        if (results.sqli.vulnerable) break; // Stop at first vulnerable path
+      } catch(e) {}
+    }
 
     return results;
   }
@@ -381,7 +434,9 @@ Do NOT output English unless specifically requested.`;
     try {
       const response = await fetch(`https://${domain}`, { redirect: "follow", timeout: 5000 });
       html = await response.text();
-      respHeaders = processHeaders(response.headers).raw;
+      const rawObj: Record<string, string> = {};
+      response.headers.forEach((v, k) => rawObj[k.toLowerCase()] = v.toLowerCase());
+      respHeaders = rawObj;
       respServer = respHeaders['server'] || '';
       respCookies = respHeaders['set-cookie'] || '';
       
@@ -390,9 +445,30 @@ Do NOT output English unless specifically requested.`;
       results.headers = { error: String(e) };
     }
     
+    let internalPaths = ["/"];
+    let extraHtml = "";
+    if (html) {
+      try {
+        internalPaths = extractInternalPaths(html, domain);
+        // Fetch up to 3 more pages concurrently to improve CMS and Tech detection
+        const pagesToFetch = internalPaths.filter(p => p !== '/').slice(0, 3);
+        await Promise.all(pagesToFetch.map(async (path) => {
+          try {
+            const r = await fetch(`https://${domain}${path}`, { redirect: "follow", timeout: 3000 });
+            const pageHtml = await r.text();
+            extraHtml += "\n" + pageHtml;
+            r.headers.forEach((v, k) => {
+               if (k.toLowerCase() === 'set-cookie') respCookies += ';' + v.toLowerCase();
+               if (!respHeaders[k.toLowerCase()]) respHeaders[k.toLowerCase()] = v.toLowerCase();
+            });
+          } catch(e){}
+        }));
+      } catch(e) {}
+    }
+
     results.ssl = await scanSsl(domain);
     results.dns_whois = await scanDnsWhois(domain);
-    results.cms = scanCms(html, respHeaders, respCookies);
+    results.cms = scanCms(html + extraHtml, respHeaders, respCookies);
     results.ports = await scanPorts(domain);
     
     const cookiesObj: Record<string, string> = {};
@@ -406,7 +482,7 @@ Do NOT output English unless specifically requested.`;
     }
     
     results.ddos = scanDdos(respHeaders, respServer, cookiesObj);
-    results.vulnerabilities = await scanVulnerabilities(domain);
+    results.vulnerabilities = await scanVulnerabilities(domain, internalPaths);
     
     const { score, riskLevel } = calculateScore(results);
     
