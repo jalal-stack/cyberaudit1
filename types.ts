@@ -31,6 +31,7 @@ export interface ScanResultItem {
 
 export interface ScanResults {
   overallScore: number;
+  domain?: string;
   summary: string;
   details: ScanResultItem[];
   rawTechnologies?: Record<string, string[]>;

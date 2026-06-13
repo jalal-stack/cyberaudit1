@@ -36,11 +36,7 @@ interface GeminiTranslations {
 }
 
 export const runSecurityAudit = async (url: string, selectedScans: string[], translations: GeminiTranslations, language: Language): Promise<ScanResults> => {
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || "/api/backend";
-
-  if (!backendUrl) {
-    throw new Error("Backend URL (VITE_API_BASE_URL) is not configured.");
-  }
+  const backendUrl = "/api/backend";
 
   try {
     const response = await fetch(`${backendUrl}/scan?domain=${encodeURIComponent(url)}&lang=${language}`, {
@@ -179,6 +175,7 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
     
     return {
         overallScore: overallScore,
+        domain: url,
         summary: summaryText,
         details: details,
         rawTechnologies: rawTechnologies,
