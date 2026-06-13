@@ -241,7 +241,19 @@ async function startServer() {
     } catch(e) {}
 
     // Files
-    const filesToCheck = [".env", ".git/config", "docker-compose.yml"];
+    const filesToCheck = [
+      ".env", 
+      ".env.local", 
+      ".env.production",
+      ".git/config", 
+      "docker-compose.yml",
+      "package.json",
+      "composer.json",
+      "wp-config.php.bak",
+      "manage.py",               // Django
+      "next.config.js",          // Next.js
+      "storage/logs/laravel.log" // Laravel
+    ];
     for (const file of filesToCheck) {
       try {
         const resp = await fetch(`https://${domain}/${file}`, { redirect: "manual", timeout: 3000 });
@@ -416,89 +428,94 @@ Do NOT output English unless specifically requested.`;
 
   // Main Endpoint
   app.get("/api/backend/scan", async (req, res) => {
-    let rawDomain = req.query.domain as string;
-    let lang = (req.query.lang as string) || "ru";
-    if (!rawDomain) {
-       res.status(400).json({ detail: "Missing domain parameter" });
-       return;
-    }
-    
-    let domain = rawDomain.replace("http://", "").replace("https://", "").split("/")[0];
-    
-    const results: any = {};
-    let respHeaders: Record<string, string> = {};
-    let respServer = "";
-    let respCookies = "";
-    let html = "";
-    
     try {
-      const response = await fetch(`https://${domain}`, { redirect: "follow", timeout: 5000 });
-      html = await response.text();
-      const rawObj: Record<string, string> = {};
-      response.headers.forEach((v, k) => rawObj[k.toLowerCase()] = v.toLowerCase());
-      respHeaders = rawObj;
-      respServer = respHeaders['server'] || '';
-      respCookies = respHeaders['set-cookie'] || '';
-      
-      results.headers = processHeaders(response.headers);
-    } catch(e) {
-      results.headers = { error: String(e) };
-    }
-    
-    let internalPaths = ["/"];
-    let extraHtml = "";
-    if (html) {
-      try {
-        internalPaths = extractInternalPaths(html, domain);
-        // Fetch up to 3 more pages concurrently to improve CMS and Tech detection
-        const pagesToFetch = internalPaths.filter(p => p !== '/').slice(0, 3);
-        await Promise.all(pagesToFetch.map(async (path) => {
-          try {
-            const r = await fetch(`https://${domain}${path}`, { redirect: "follow", timeout: 3000 });
-            const pageHtml = await r.text();
-            extraHtml += "\n" + pageHtml;
-            r.headers.forEach((v, k) => {
-               if (k.toLowerCase() === 'set-cookie') respCookies += ';' + v.toLowerCase();
-               if (!respHeaders[k.toLowerCase()]) respHeaders[k.toLowerCase()] = v.toLowerCase();
-            });
-          } catch(e){}
-        }));
-      } catch(e) {}
-    }
-
-    results.ssl = await scanSsl(domain);
-    results.dns_whois = await scanDnsWhois(domain);
-    results.cms = scanCms(html + extraHtml, respHeaders, respCookies);
-    results.ports = await scanPorts(domain);
-    
-    const cookiesObj: Record<string, string> = {};
-    if (respCookies) {
-      const parts = respCookies.split(';');
-      for (const p of parts) {
-        const [k, v] = p.trim().split('=');
-        if (k && v) cookiesObj[k] = v;
-        else if (k) cookiesObj[k] = "true";
+      let rawDomain = req.query.domain as string;
+      let lang = (req.query.lang as string) || "ru";
+      if (!rawDomain) {
+         res.status(400).json({ detail: "Missing domain parameter" });
+         return;
       }
+      
+      let domain = rawDomain.replace("http://", "").replace("https://", "").split("/")[0];
+      
+      const results: any = {};
+      let respHeaders: Record<string, string> = {};
+      let respServer = "";
+      let respCookies = "";
+      let html = "";
+      
+      try {
+        const response = await fetch(`https://${domain}`, { redirect: "follow", timeout: 5000 });
+        html = await response.text();
+        const rawObj: Record<string, string> = {};
+        response.headers.forEach((v, k) => rawObj[k.toLowerCase()] = v.toLowerCase());
+        respHeaders = rawObj;
+        respServer = respHeaders['server'] || '';
+        respCookies = respHeaders['set-cookie'] || '';
+        
+        results.headers = processHeaders(response.headers);
+      } catch(e) {
+        results.headers = { error: String(e) };
+      }
+      
+      let internalPaths = ["/"];
+      let extraHtml = "";
+      if (html) {
+        try {
+          internalPaths = extractInternalPaths(html, domain);
+          // Fetch up to 3 more pages concurrently to improve CMS and Tech detection
+          const pagesToFetch = internalPaths.filter(p => p !== '/').slice(0, 3);
+          await Promise.all(pagesToFetch.map(async (path) => {
+            try {
+              const r = await fetch(`https://${domain}${path}`, { redirect: "follow", timeout: 3000 });
+              const pageHtml = await r.text();
+              extraHtml += "\n" + pageHtml;
+              r.headers.forEach((v, k) => {
+                 if (k.toLowerCase() === 'set-cookie') respCookies += ';' + v.toLowerCase();
+                 if (!respHeaders[k.toLowerCase()]) respHeaders[k.toLowerCase()] = v.toLowerCase();
+              });
+            } catch(e){}
+          }));
+        } catch(e) {}
+      }
+  
+      results.ssl = await scanSsl(domain);
+      results.dns_whois = await scanDnsWhois(domain);
+      results.cms = scanCms(html + extraHtml, respHeaders, respCookies);
+      results.ports = await scanPorts(domain);
+      
+      const cookiesObj: Record<string, string> = {};
+      if (respCookies) {
+        const parts = respCookies.split(';');
+        for (const p of parts) {
+          const [k, v] = p.trim().split('=');
+          if (k && v) cookiesObj[k] = v;
+          else if (k) cookiesObj[k] = "true";
+        }
+      }
+      
+      results.ddos = scanDdos(respHeaders, respServer, cookiesObj);
+      results.vulnerabilities = await scanVulnerabilities(domain, internalPaths);
+      
+      const { score, riskLevel } = calculateScore(results);
+      
+      const languageMap: Record<string, string> = { ru: "Russian", uz: "Uzbek", en: "English" };
+      const fullLanguageName = languageMap[lang] || "Russian";
+      
+      const aiSummary = await generateAiSummary(domain, results, score, riskLevel, fullLanguageName);
+      
+      res.json({
+          domain,
+          score,
+          risk_level: riskLevel,
+          results,
+          ai_summary: aiSummary,
+          timestamp: new Date().toISOString()
+      });
+    } catch (e: any) {
+        console.error("Critical error in /api/backend/scan :", e);
+        res.status(500).json({ detail: "Internal server error", error: e.message });
     }
-    
-    results.ddos = scanDdos(respHeaders, respServer, cookiesObj);
-    results.vulnerabilities = await scanVulnerabilities(domain, internalPaths);
-    
-    const { score, riskLevel } = calculateScore(results);
-    
-    const languageMap: Record<string, string> = { ru: "Russian", uz: "Uzbek", en: "English" };
-    const fullLanguageName = languageMap[lang] || "Russian";
-    
-    const aiSummary = await generateAiSummary(domain, results, score, riskLevel, fullLanguageName);
-    
-    res.json({
-        domain,
-        score,
-        risk_level: riskLevel,
-        results,
-        ai_summary: aiSummary,
-        timestamp: new Date().toISOString()
-    });
   });
 
   // Vite middleware for development
