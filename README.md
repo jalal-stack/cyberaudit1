@@ -14,10 +14,10 @@ CyberAudit was developed to simplify website security assessment through automat
 
 The project focuses on:
 
-* Detecting common web security weaknesses
-* Evaluating website security configuration
-* Providing clear and actionable recommendations
-* Helping developers improve the security of their web applications
+- Detecting common web security weaknesses
+- Evaluating website security configuration
+- Providing clear and actionable recommendations
+- Helping developers improve the security of their web applications
 
-The long-term research vision of CyberAudit is to evolve into an intelligent security analysis platform by integrating Artificial Intelligence for automated vulnerability interpretation and risk assessment.
+The long-term research vision of CyberAudit is to integrate Large Language Models (LLMs) into automated web security analysis to assist security professionals in vulnerability detection, risk assessment, and security report generation.
 
