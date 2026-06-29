@@ -21,3 +21,37 @@ The project focuses on:
 
 The long-term research vision of CyberAudit is to integrate Large Language Models (LLMs) into automated web security analysis to assist security professionals in vulnerability detection, risk assessment, and security report generation.
 
+## 🏗 System Architecture
+
+```text
+                    User
+                      │
+                      ▼
+              Enter Website URL
+                      │
+                      ▼
+              CyberAudit Scanner
+                      │
+      ┌───────────────┼────────────────┐
+      │               │                │
+      ▼               ▼                ▼
+ SSL/TLS         HTTP Headers      DNS / WHOIS
+      │               │                │
+      ├───────────────┼────────────────┤
+      ▼               ▼                ▼
+ Open Ports      Technology Scan   Web Security Checks
+                                        │
+                 ┌──────────────────────┼─────────────────────┐
+                 ▼                      ▼                     ▼
+              SQL Injection          XSS Analysis         CORS Analysis
+                 │                      │                     │
+                 └──────────────────────┼─────────────────────┘
+                                        ▼
+                             Risk Assessment Engine
+                                        │
+                                        ▼
+                         Security Report Generation
+                                        │
+                                        ▼
+                       Dashboard & Security Recommendations
+```
