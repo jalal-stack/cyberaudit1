@@ -1,6 +1,8 @@
 import React from 'react';
 import { useTranslation } from '../App';
 import { ShieldIcon, GlobeIcon, ZapIcon, LockIcon } from './icons';
+import dashboardImg from '../src/assets/images/dashboard_screenshot_1783149831916.jpg';
+import scanResultsImg from '../src/assets/images/scan_results_screenshot_1783149853776.jpg';
 
 export const About: React.FC = () => {
   const { t } = useTranslation();
@@ -12,6 +14,26 @@ export const About: React.FC = () => {
         <p className="text-xl text-slate-400">
           {t('about.subtitle') || "Open-source automated web security assessment platform."}
         </p>
+      </div>
+
+      <div className="space-y-6 mb-12">
+        <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-8">
+           <h3 className="text-2xl font-bold text-white mb-6">Interface Preview</h3>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="space-y-3">
+               <div className="rounded-xl overflow-hidden border border-slate-600 shadow-lg shadow-purple-900/20">
+                 <img src={dashboardImg} alt="CyberAudit Dashboard" className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+               </div>
+               <p className="text-center text-sm text-slate-400 font-medium">Dashboard Overview</p>
+             </div>
+             <div className="space-y-3">
+               <div className="rounded-xl overflow-hidden border border-slate-600 shadow-lg shadow-blue-900/20">
+                 <img src={scanResultsImg} alt="CyberAudit Scan Results" className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+               </div>
+               <p className="text-center text-sm text-slate-400 font-medium">Detailed Scan Results</p>
+             </div>
+           </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -33,6 +55,9 @@ export const About: React.FC = () => {
           <p className="text-slate-300 leading-relaxed">
             {t('about.architectureDesc') || "The platform leverages a scalable React/TypeScript frontend with an Express backend engine. The custom crawling module navigates up to 50 pages per domain to identify vulnerabilities (XSS, SQLi, CORS), missing headers, and infrastructure details simultaneously."}
           </p>
+          <div className="mt-4 rounded-xl overflow-hidden border border-slate-600 shadow-lg shadow-blue-900/20">
+            <img src="/architecture.png" alt="System Architecture Diagram" className="w-full h-auto object-cover" />
+          </div>
         </div>
       </div>
 
