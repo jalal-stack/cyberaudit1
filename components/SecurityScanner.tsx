@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ScanResults, ScanId, ScanOption, ScanStatus, ScanResultItem, ScanHistoryItem } from '../types';
 import { runSecurityAudit } from '../services/geminiService';
-import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon, BugIcon } from './icons';
+import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon, BugIcon, FileTextIcon } from './icons';
 import { useTranslation, Language } from '../App';
 
 const ScanTypeOption: React.FC<{ option: ScanOption; isChecked: boolean; onChange: (id: ScanId) => void; }> = ({ option, isChecked, onChange }) => {
@@ -313,20 +313,93 @@ export const SecurityScanner: React.FC<{
     );
   }
   
+  const exportToPDF = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const element = document.getElementById('report-content');
+      if (!element) return;
+      
+      // Add a loading class or style if needed
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#0f172a', // slate-900
+        windowWidth: 1200,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`CyberAudit_Report_${displayedUrl.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+    } catch (e) {
+      console.error("Failed to generate PDF", e);
+    }
+  };
+
   if (results) {
+    const criticalIssues = results.details.filter(d => d.status === 'FAIL').length + (results.rawVulnerabilities?.xss?.vulnerable || results.rawVulnerabilities?.sqli?.vulnerable ? 1 : 0);
+    const warnings = results.details.filter(d => d.status === 'WARN').length;
+    const passed = results.details.filter(d => d.status === 'PASS').length;
+
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                 <h3 className="text-2xl font-bold text-white text-center sm:text-left">{t('scanner.resultsFor')} <span className="text-purple-400">{displayedUrl}</span></h3>
-                <button
-                    onClick={handleStartNewScan}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2 w-full sm:w-auto justify-center"
-                >
-                    <PlayIcon className="h-5 w-5" />
-                    <span>{t('scanner.newScanButton')}</span>
-                </button>
+                <div className="flex flex-wrap gap-3 w-full sm:w-auto justify-center">
+                    <button
+                        onClick={exportToPDF}
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                    >
+                        <FileTextIcon className="h-5 w-5" />
+                        <span>Export PDF</span>
+                    </button>
+                    <button
+                        onClick={handleStartNewScan}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                    >
+                        <PlayIcon className="h-5 w-5" />
+                        <span>{t('scanner.newScanButton')}</span>
+                    </button>
+                </div>
             </div>
-            <OverallScore score={results.overallScore} summary={results.summary} t={t} />
+
+            {/* Summary Cards */}
+            <div id="report-content" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm text-slate-400 uppercase font-semibold tracking-wider mb-2">Security Score</span>
+                        <div className={`text-5xl font-bold ${getScoreColor(results.overallScore)}`}>
+                            {results.overallScore}
+                        </div>
+                    </div>
+                    <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-red-500/30 p-6 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm text-slate-400 uppercase font-semibold tracking-wider mb-2">Critical Issues</span>
+                        <div className="text-4xl font-bold text-red-400 flex items-center gap-2">
+                            <TriangleAlertIcon className="h-8 w-8" />
+                            {criticalIssues}
+                        </div>
+                    </div>
+                    <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-yellow-500/30 p-6 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm text-slate-400 uppercase font-semibold tracking-wider mb-2">Warnings</span>
+                        <div className="text-4xl font-bold text-yellow-400 flex items-center gap-2">
+                            <ShieldIcon className="h-8 w-8" />
+                            {warnings}
+                        </div>
+                    </div>
+                    <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-green-500/30 p-6 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm text-slate-400 uppercase font-semibold tracking-wider mb-2">Passed Checks</span>
+                        <div className="text-4xl font-bold text-green-400 flex items-center gap-2">
+                            <CircleCheckIcon className="h-8 w-8" />
+                            {passed}
+                        </div>
+                    </div>
+                </div>
+
+                <OverallScore score={results.overallScore} summary={results.summary} t={t} />
             
             {!!results.rawVulnerabilities && Object.keys(results.rawVulnerabilities).length > 0 && !results.rawVulnerabilities.error && (
                 <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
@@ -485,6 +558,7 @@ export const SecurityScanner: React.FC<{
                 {results.details.map((item, index) => (
                     <ResultCard key={index} item={item} t={t} />
                 ))}
+            </div>
             </div>
         </div>
     );

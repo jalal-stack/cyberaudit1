@@ -29,6 +29,24 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, currentView, se
 
   const renderNavLinks = (isMobile: boolean) => {
     const buttonClass = isMobile ? `w-full text-left ${navLinkClasses}` : navLinkClasses;
+    
+    const sharedLinks = (
+      <>
+        <button
+          className={`${buttonClass} ${currentView === 'about' ? activeClasses : inactiveClasses}`}
+          onClick={() => handleNavClick('about')}
+        >
+          <span>{t('header.about')}</span>
+        </button>
+        <button
+          className={`${buttonClass} ${currentView === 'documentation' ? activeClasses : inactiveClasses}`}
+          onClick={() => handleNavClick('documentation')}
+        >
+          <span>{t('header.docs')}</span>
+        </button>
+      </>
+    );
+
     if (isAuthenticated) {
       return (
         <>
@@ -46,6 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, currentView, se
             <GlobeIcon className="h-4 w-4" />
             <span>{t('header.scanner')}</span>
           </button>
+          {sharedLinks}
           <button onClick={handleLogoutClick} className={`${buttonClass} ${inactiveClasses}`}>
             {t('header.logout')}
           </button>
@@ -54,6 +73,7 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, currentView, se
     }
     return (
       <>
+        {sharedLinks}
         <button
           className={`${buttonClass} ${currentView === 'login' ? activeClasses : inactiveClasses}`}
           onClick={() => handleNavClick('login')}

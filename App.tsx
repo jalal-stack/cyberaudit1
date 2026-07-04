@@ -4,6 +4,8 @@ import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
+import { About } from './components/About';
+import { Documentation } from './components/Documentation';
 import { ScanHistoryItem, ScanResults } from './types';
 
 // --- I18N (Internationalization) Setup ---
@@ -17,6 +19,8 @@ const translations = {
       title: "CyberAudit",
       dashboard: "Панель управления",
       scanner: "Сканер безопасности",
+      about: "О проекте",
+      docs: "Документация",
       logout: "Выйти",
       login: "Войти",
       register: "Регистрация",
@@ -193,6 +197,8 @@ const translations = {
       title: "CyberAudit",
       dashboard: "Boshqaruv paneli",
       scanner: "Xavfsizlik skaneri",
+      about: "Loyiha haqida",
+      docs: "Hujjatlar",
       logout: "Chiqish",
       login: "Kirish",
       register: "Ro'yxatdan o'tish",
@@ -369,6 +375,8 @@ const translations = {
       title: "CyberAudit",
       dashboard: "Dashboard",
       scanner: "Security Scanner",
+      about: "About",
+      docs: "Documentation",
       logout: "Logout",
       login: "Login",
       register: "Register",
@@ -590,7 +598,7 @@ export const useTranslation = () => {
 
 // --- Main App Component ---
 
-export type View = 'dashboard' | 'scanner' | 'login' | 'register';
+export type View = 'dashboard' | 'scanner' | 'login' | 'register' | 'about' | 'documentation';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -730,6 +738,13 @@ function App() {
           }}
         />
       );
+    }
+    if (currentView === 'about') {
+      return <About />;
+    }
+    
+    if (currentView === 'documentation') {
+      return <Documentation />;
     }
     return null;
   };
