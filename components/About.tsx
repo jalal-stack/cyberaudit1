@@ -85,13 +85,25 @@ export const About: React.FC = () => {
       <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-8">
         <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
           <GlobeIcon className="h-6 w-6 text-green-400 mr-3" />
-          {t('about.roadmapTitle') || "Future Roadmap"}
+          {t('about.roadmapTitle') || "Future Roadmap: Multi-Agent AI Platform"}
         </h3>
+        <p className="text-slate-300 mb-6">
+          Evolving from a single application to a fully autonomous platform using local LLMs (e.g., LM Studio). Users will be able to input natural language requests like <em>"Check my server 192.168.1.15 and prepare a full report,"</em> and the system will orchestrate specialized AI agents to complete the task:
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {['AI-driven vulnerability analysis context', 'Integration with the National Vulnerability Database (CVEs)', 'Scheduled automated scans', 'Open REST API for third-party tools'].map((item, index) => (
+          {[
+            '🧠 Chief AI Agent (Coordinator)', 
+            '🌐 Network Agent (Network analysis)', 
+            '🔍 OSINT Agent (Open-source intelligence)', 
+            '🛡️ Vulnerability Agent (CVEs & exploitation)',
+            '🌍 Web Security Agent (App testing)',
+            '📋 Compliance Agent (Standards & auditing)',
+            '📊 Report Agent (Unified reporting)',
+            '📚 Knowledge Agent (RAG: MITRE, OWASP)'
+          ].map((item, index) => (
             <div key={index} className="flex items-center space-x-3 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-              <div className="h-2 w-2 rounded-full bg-green-400"></div>
-              <span className="text-slate-300 text-sm">{item}</span>
+              <div className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></div>
+              <span className="text-slate-300 text-sm font-medium">{item}</span>
             </div>
           ))}
         </div>

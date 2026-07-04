@@ -6,6 +6,7 @@ import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { About } from './components/About';
 import { Documentation } from './components/Documentation';
+import { Agents } from './components/Agents';
 import { ScanHistoryItem, ScanResults } from './types';
 
 // --- I18N (Internationalization) Setup ---
@@ -21,6 +22,7 @@ const translations = {
       scanner: "Сканер безопасности",
       about: "О проекте",
       docs: "Документация",
+      agents: "ИИ Агенты",
       logout: "Выйти",
       login: "Войти",
       register: "Регистрация",
@@ -199,6 +201,7 @@ const translations = {
       scanner: "Xavfsizlik skaneri",
       about: "Loyiha haqida",
       docs: "Hujjatlar",
+      agents: "AI Agentlar",
       logout: "Chiqish",
       login: "Kirish",
       register: "Ro'yxatdan o'tish",
@@ -377,6 +380,7 @@ const translations = {
       scanner: "Security Scanner",
       about: "About",
       docs: "Documentation",
+      agents: "AI Agents",
       logout: "Logout",
       login: "Login",
       register: "Register",
@@ -745,6 +749,10 @@ function App() {
     
     if (currentView === 'documentation') {
       return <Documentation />;
+    }
+    
+    if (currentView === 'agents') {
+      return <Agents />;
     }
     return null;
   };

@@ -118,9 +118,14 @@ cyberaudit/
 
 - [x] **Current Version:** Deep Crawling & Basic Vulnerability Scanning
 - [x] **Multi-language Support:** EN, RU, UZ capabilities
-- [ ] **AI Risk Analysis:** Integration with LLMs for intelligent vulnerability contextualization
-- [ ] **CVE Integration:** Real-time checking of software versions against the National Vulnerability Database (NVD)
-- [ ] **PDF Export:** Downloadable professional security audit reports
+- [x] **PDF Export:** Downloadable professional security audit reports
+- [ ] **Multi-Agent AI Architecture:** Evolving from a single application to a fully autonomous platform using local LLMs (e.g., LM Studio):
+    - **Chief AI Agent:** Central coordinator for complex security requests (e.g., "Check server 192.168.1.15 and prepare a full report").
+    - **Network Agent:** Deep network analysis and mapping.
+    - **Vulnerability Agent:** Detection and exploitation analysis of known CVEs.
+    - **Web Security Agent:** Dynamic application security testing.
+    - **OSINT & Knowledge Agents:** Open-source intelligence gathering and RAG-based querying against MITRE, OWASP, and NIST databases.
+    - **Report & Compliance Agents:** Automated standard compliance checking and unified report generation.
 - [ ] **REST API:** Open API endpoints for third-party integration
 
 ---
