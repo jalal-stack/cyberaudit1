@@ -360,11 +360,187 @@ const translations = {
         { title: 'DDoS himoyasi', status: 'PASS', summary: "Veb-sayt, ehtimol, DDoS hujumlarini yumshatishning mustahkam imkoniyatlariga ega bo'lgan nufuzli kontent yetkazib berish tarmog'i (CDN) orqali ishlaydi va keng tarqalgan hajmli va dastur darajasidagi hujumlardan samarali himoya qiladi.", recommendation: "" }
       ]
     }
+  },
+  en: {
+    common: {
+      comingSoon: "Coming soon!",
+    },
+    header: {
+      title: "CyberAudit",
+      dashboard: "Dashboard",
+      scanner: "Security Scanner",
+      logout: "Logout",
+      login: "Login",
+      register: "Register",
+      openMenu: "Open main menu",
+    },
+    login: {
+      title: "Login to CyberAudit",
+      welcome: "Welcome back!",
+      emailLabel: "Email",
+      emailPlaceholder: "you@example.com",
+      passwordLabel: "Password",
+      passwordPlaceholder: "••••••••",
+      loginButton: "Sign in",
+      noAccount: "Don't have an account?",
+      switchToRegister: "Sign up",
+    },
+    register: {
+      title: "Create an account",
+      subtitle: "Start your security journey.",
+      emailLabel: "Email",
+      emailPlaceholder: "you@example.com",
+      passwordLabel: "Password",
+      passwordPlaceholder: "••••••••",
+      confirmPasswordLabel: "Confirm Password",
+      registerButton: "Sign up",
+      hasAccount: "Already have an account?",
+      switchToLogin: "Sign in",
+    },
+    dashboard: {
+      title: "Dashboard",
+      subtitle: "Overview of cybersecurity platform activity",
+      totalScans: "Total Scans",
+      successfulChecks: "Successful Checks",
+      certificatesIssued: "Certificates Issued",
+      activeUsers: "Active Users",
+      trendWeek: "for the week",
+      trendSuccessRate: "% success rate",
+      trendFromScans: "% from scans",
+      trendMonth: "for the month",
+      recentScans: "Recent Scans",
+      filterPlaceholder: "Filter by URL...",
+      sortNewest: "Newest first",
+      sortScoreHigh: "Highest score",
+      sortScoreLow: "Lowest score",
+      historyEmpty: "Scan history is empty.",
+      historyEmptySubtext: "Run your first scan to see results here.",
+      historyNotFound: "No scans found.",
+      historyNotFoundSubtext: "Try changing the filter or clearing it.",
+      securityScoreHistory: "Security Score History",
+      points: "Points",
+      score: "Score",
+      scans: "Scans",
+      scoreUnit: "Pts",
+      quickActions: "Quick Actions",
+      newScan: "New Scan",
+      exportReports: "Export Reports",
+      manageUsers: "Manage Users",
+      systemSettings: "System Settings",
+      scoreDistribution: "Score Distribution",
+      scoreRangeHigh: "80-100 pts",
+      scoreRangeMid: "60-79 pts",
+      scoreRangeLow: "0-59 pts",
+      systemStatus: "System Status",
+      apiServer: "API Server",
+      database: "Database",
+      scanners: "Scanners",
+      taskQueue: "Task Queue",
+      statusOnline: "Online",
+      statusActive: "Active",
+      statusInQueue: "in queue",
+    },
+    scanner: {
+      title: "Website Security Scanner",
+      subtitle: "Comprehensive security check of your website including SSL, ports, security headers, CMS vulnerabilities, and DDoS protection.",
+      scanUrlLabel: "Website to scan",
+      scanUrlPlaceholder: "example.com",
+      scanUrlHint: "Enter only the domain name without http:// or https://",
+      scanTypesLabel: "Scan Types",
+      scanOptions: {
+        ssl: "SSL/HTTPS Analysis",
+        ports: "Port Scan",
+        headers: "HTTP Security Headers",
+        cms: "Technologies & CMS (Wappalyzer logic)",
+        leaks: "Data Leak Check",
+        ddos: "DDoS Protection",
+      },
+      submitButton: "Start Scan",
+      scanningButton: "Scanning...",
+      resultsFor: "Results for",
+      technologiesLabel: "Technologies & CMS",
+      dnsLabels: {
+        title: "Domain Information (DNS/WHOIS)",
+        ip: "IP Address",
+        registrar: "Registrar",
+        nameservers: "Name Servers",
+        country: "Country",
+      },
+      vulnLabels: {
+        title: "Vulnerabilities & Recon (XSS / SQLi / CORS / Files)",
+        scannedPages: "Pages scanned:",
+        xssTitle: "Cross-Site Scripting (XSS)",
+        sqliTitle: "SQL Injection (SQLi)",
+        corsTitle: "CORS Policy",
+        filesTitle: "Sensitive File Exposure",
+        adminTitle: "Exposed Admin Panels",
+        vulnerable: "Vulnerability found",
+        secure: "Secure",
+      },
+      techCategories: {
+        "CMS": "CMS",
+        "Frameworks": "Frameworks",
+        "Web Servers": "Web Servers",
+        "Programming Languages": "Programming Languages",
+        "Analytics": "Analytics",
+        "Tag Managers": "Tag Managers",
+        "Ads": "Advertising",
+        "Fonts": "Fonts",
+        "Miscellaneous": "Miscellaneous",
+        "Video/Audio Player": "Video/Audio Player",
+        "JS Libraries": "JS Libraries",
+        "None": "Not found"
+      },
+      newScanButton: "New Scan",
+      overallScore: "Overall Security Score",
+      recommendation: "Recommendation:",
+      scanningInProgressTitle: "Scan in progress",
+      scanningInProgressSubtitle: "Please wait, we are analyzing your website...",
+      finalizingReport: "Finalizing and preparing report...",
+      infoCards: {
+        comprehensive: {
+          title: "Comprehensive Check",
+          text: "Multi-layered security check covering all core aspects of website protection."
+        },
+        certification: {
+          title: "Certification",
+          text: "Scoring 80+ points grants a security certificate. Otherwise, get a detailed report with recommendations."
+        },
+        recommendations: {
+          title: "Recommendations",
+          text: "Get personalized security improvement recommendations and re-scan capability."
+        }
+      }
+    },
+    status: {
+      pass: "PASS",
+      fail: "FAIL",
+      warn: "WARN",
+    },
+    errors: {
+      geminiFetchFailed: "Failed to connect to API server (Render.com free tier may be starting, wait 1-2 minutes and try again).",
+    },
+    gemini: {
+      analysisNotGeneratedSummary: "Analysis for this scan type was not generated.",
+      analysisNotGeneratedRecommendation: "Try running the scan again with a more specific query."
+    },
+    exampleReport: {
+      overallScore: 67,
+      summary: "The kun.uz website shows a moderate level of security with strong DDoS protection, but it has significant flaws in HTTP security header configuration and requires improvements in SSL/HTTPS, port management, CMS updates, and data protection.",
+      details: [
+        { title: 'SSL/HTTPS Analysis', status: 'WARN', summary: "The website uses a valid SSL certificate, but the configuration supports outdated TLS versions (TLS 1.0/1.1) and could be improved by using stronger cipher suites for enhanced encryption reliability.", recommendation: "Disable support for outdated TLS versions (1.0 and 1.1). Prioritize modern cipher suites (e.g., AES-256-GCM) and ensure perfect forward secrecy is consistently achieved." },
+        { title: 'Port Scanning', status: 'WARN', summary: "Standard web ports (80 and 443) are properly open, but a few non-standard ports potentially used for management or internal services are accessible externally, increasing the attack surface.", recommendation: "Review all open ports and restrict access to non-essential services. Implement strict firewall rules to allow access only to necessary IP addresses for administrative ports." },
+        { title: 'HTTP Security Headers', status: 'FAIL', summary: "Several critical HTTP security headers, including CSP, HSTS with proper max-age, and X-Frame-Options, are missing or sub-optimally configured, leaving the site vulnerable.", recommendation: "Implement or improve all critical security headers: apply HSTS with sufficient max-age, implement a robust CSP, set X-Frame-Options to DENY or SAMEORIGIN, and ensure X-Content-Type-Options is set to nosniff." },
+        { title: 'CMS & Vulnerabilities', status: 'WARN', summary: "The CMS or some of its components appear slightly outdated, which could expose the website to known vulnerabilities.", recommendation: "Create a strict patching schedule for the CMS core, themes, and plugins. Regularly scan for known vulnerabilities and apply updates promptly. Remove unused plugins." },
+        { title: "Data Leak Check", status: 'WARN', summary: "No direct breach of the main user database was confirmed, but several email addresses associated with the domain were found in third-party data breaches.", recommendation: "Encourage all users to use strong, unique passwords and enable MFA. Implement a system to monitor for domain-related credentials in future leaks." },
+        { title: 'DDoS Protection', status: 'PASS', summary: "The website operates behind a reputable CDN with robust DDoS mitigation capabilities, effectively protecting against common volumetric attacks.", recommendation: "" }
+      ]
+    }
   }
 };
 
 
-export type Language = 'ru' | 'uz';
+export type Language = 'ru' | 'uz' | 'en';
 
 interface LanguageContextType {
   language: Language;

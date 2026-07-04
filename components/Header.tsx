@@ -85,6 +85,13 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, currentView, se
       >
         UZ
       </button>
+      <div className="w-px h-4 bg-slate-600"></div>
+      <button 
+        onClick={() => setLanguage('en')}
+        className={`px-2 py-1 rounded-md text-sm transition-colors ${language === 'en' ? 'bg-purple-500/20 text-white font-semibold' : 'text-slate-300 hover:bg-slate-700/50'}`}
+      >
+        EN
+      </button>
     </div>
   );
 
