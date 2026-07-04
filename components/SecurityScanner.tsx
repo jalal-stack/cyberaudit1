@@ -82,12 +82,13 @@ const ResultCard: React.FC<{ item: ScanResultItem, t: (key: string) => string }>
     );
 };
 
+const getScoreColor = (s: number) => {
+    if (s >= 80) return 'text-green-400';
+    if (s >= 50) return 'text-yellow-400';
+    return 'text-red-400';
+};
+
 const OverallScore: React.FC<{ score: number, summary: string, t: (key: string) => string }> = ({ score, summary, t }) => {
-    const getScoreColor = (s: number) => {
-        if (s >= 80) return 'text-green-400';
-        if (s >= 50) return 'text-yellow-400';
-        return 'text-red-400';
-    };
     const circumference = 2 * Math.PI * 52;
     const offset = circumference - (score / 100) * circumference;
 
