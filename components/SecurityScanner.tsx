@@ -330,9 +330,16 @@ export const SecurityScanner: React.FC<{
             
             {!!results.rawVulnerabilities && Object.keys(results.rawVulnerabilities).length > 0 && !results.rawVulnerabilities.error && (
                 <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
-                    <div className="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
-                        <BugIcon className="h-6 w-6 text-red-500" />
-                        <h3 className="text-2xl font-bold text-white">{t('scanner.vulnLabels.title') || "Code Vulnerabilities (XSS / SQLi)"}</h3>
+                    <div className="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                        <div className="flex items-center space-x-3">
+                            <BugIcon className="h-6 w-6 text-red-500" />
+                            <h3 className="text-2xl font-bold text-white">{t('scanner.vulnLabels.title') || "Code Vulnerabilities (XSS / SQLi)"}</h3>
+                        </div>
+                        {results.rawVulnerabilities.scanned_pages !== undefined && (
+                            <div className="text-sm text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                                {t('scanner.vulnLabels.scannedPages') || "Pages scanned:"} {results.rawVulnerabilities.scanned_pages}
+                            </div>
+                        )}
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

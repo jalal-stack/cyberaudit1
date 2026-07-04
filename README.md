@@ -1,57 +1,20 @@
-# 🛡️ CyberAudit
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-### Automated Web Security Assessment Platform
+# Run and deploy your AI Studio app
 
-CyberAudit is an open-source web security assessment platform designed to analyze websites and identify common security weaknesses.
+This contains everything you need to run your app locally.
 
-The platform performs automated security checks, detects configuration issues, analyzes network exposure, and generates detailed security reports with practical recommendations.
+View your app in AI Studio: https://ai.studio/apps/182ae30d-4a4d-4e4c-af5f-10911d3786ad
 
----
+## Run Locally
 
-## 🎯 Project Goals
+**Prerequisites:**  Node.js
 
-CyberAudit was developed to simplify website security assessment through automated analysis.
 
-The project focuses on:
-
-- Detecting common web security weaknesses
-- Evaluating website security configuration
-- Providing clear and actionable recommendations
-- Helping developers improve the security of their web applications
-
-The long-term research vision of CyberAudit is to integrate Large Language Models (LLMs) into automated web security analysis to assist security professionals in vulnerability detection, risk assessment, and security report generation.
-
-## 🏗 System Architecture
-
-```text
-                    User
-                      │
-                      ▼
-              Enter Website URL
-                      │
-                      ▼
-              CyberAudit Scanner
-                      │
-      ┌───────────────┼────────────────┐
-      │               │                │
-      ▼               ▼                ▼
- SSL/TLS         HTTP Headers      DNS / WHOIS
-      │               │                │
-      ├───────────────┼────────────────┤
-      ▼               ▼                ▼
- Open Ports      Technology Scan   Web Security Checks
-                                        │
-                 ┌──────────────────────┼─────────────────────┐
-                 ▼                      ▼                     ▼
-              SQL Injection          XSS Analysis         CORS Analysis
-                 │                      │                     │
-                 └──────────────────────┼─────────────────────┘
-                                        ▼
-                             Risk Assessment Engine
-                                        │
-                                        ▼
-                         Security Report Generation
-                                        │
-                                        ▼
-                       Dashboard & Security Recommendations
-```
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

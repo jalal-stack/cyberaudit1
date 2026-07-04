@@ -116,6 +116,7 @@ const translations = {
       },
       vulnLabels: {
         title: "Уязвимости и Разведка (XSS / SQLi / CORS / Файлы)",
+        scannedPages: "Отсканировано страниц:",
         xssTitle: "Межсайтовый скриптинг (XSS)",
         sqliTitle: "Внедрение SQL-кода (SQLi)",
         corsTitle: "Политика CORS",
@@ -291,6 +292,7 @@ const translations = {
       },
       vulnLabels: {
         title: "Zaifliklar va Razvedka (XSS / SQLi / CORS / Fayllar)",
+        scannedPages: "Skanerlangan sahifalar:",
         xssTitle: "Saytlararo skripting (XSS)",
         sqliTitle: "SQL inyektsiya (SQLi)",
         corsTitle: "CORS Siyosati",

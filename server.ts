@@ -105,6 +105,56 @@ async function startServer() {
     }
   }
 
+  // Crawler
+  async function crawl(domain: string, maxPages = 50) {
+    const visited = new Set<string>();
+    const toVisit = [`https://${domain}`];
+    const results: { url: string; html: string; headers: Headers; cookies: string }[] = [];
+    const concurrency = 10;
+
+    while (toVisit.length > 0 && results.length < maxPages) {
+      const batch = toVisit.splice(0, concurrency).filter(u => !visited.has(u));
+      if (batch.length === 0) continue;
+      batch.forEach(u => visited.add(u));
+
+      const promises = batch.map(async (url) => {
+        try {
+          const resp = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(5000) });
+          if (!resp.ok) return null;
+          const html = await resp.text();
+          return { url, html, headers: resp.headers, cookies: resp.headers.get('set-cookie') || '' };
+        } catch (e) {
+          return null;
+        }
+      });
+
+      const batchResults = await Promise.all(promises);
+      for (const res of batchResults) {
+        if (!res) continue;
+        results.push(res);
+        if (results.length >= maxPages) break;
+        
+        // Extract links
+        const regex = /href=["']([^"']+)["']/gi;
+        let match;
+        while ((match = regex.exec(res.html)) !== null) {
+          let link = match[1];
+          if (link.startsWith('/') && !link.startsWith('//')) {
+            link = `https://${domain}${link}`;
+          }
+          if (link.startsWith(`https://${domain}`) || link.startsWith(`http://${domain}`)) {
+            link = link.split('#')[0];
+            if (link.match(/\.(png|jpg|jpeg|gif|css|js|ico|svg|pdf|zip|woff|woff2|ttf|eot)$/i)) continue;
+            if (!visited.has(link) && !toVisit.includes(link)) {
+              toVisit.push(link);
+            }
+          }
+        }
+      }
+    }
+    return results.length > 0 ? results : [{ url: `https://${domain}`, html: "", headers: new Headers(), cookies: "" }];
+  }
+
   // Headers Scan
   function processHeaders(headers: Headers) {
     const hObj: Record<string, string> = {};
@@ -131,108 +181,79 @@ async function startServer() {
   }
 
   // CMS Scan
-  function scanCms(html: string, headers: Record<string, string>, cookies: string) {
+  function scanCms(pages: { html: string; headers: Headers; cookies: string }[]) {
     const categories: Record<string, string[]> = {};
-    const htmlLower = html.toLowerCase();
     
     const add = (cat: string, tech: string) => {
       if (!categories[cat]) categories[cat] = [];
       if (!categories[cat].includes(tech)) categories[cat].push(tech);
     };
 
-    if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress')) add("CMS", "WordPress");
-    if (htmlLower.includes('shopify.com') || headers['x-shopid'] || cookies.includes('_s=')) add("CMS", "Shopify");
-    if (htmlLower.includes('joomla')) add("CMS", "Joomla");
-    if (htmlLower.includes('drupal') || (headers['x-generator'] && headers['x-generator'].includes('drupal'))) add("CMS", "Drupal");
-    if (htmlLower.includes('magento') || cookies.includes('frontend=')) add("CMS", "Magento");
-    if (htmlLower.includes('bitrix') || cookies.includes('bitrix_sm=')) add("CMS", "1C-Bitrix");
+    for (const page of pages) {
+      const htmlLower = page.html.toLowerCase();
+      const cookies = page.cookies;
+      
+      const getHeader = (h: string) => page.headers.get(h)?.toLowerCase() || '';
 
-    const headersStr = JSON.stringify(headers);
-    if (headersStr.includes('laravel') || cookies.includes('laravel_session=')) add("Frameworks", "Laravel");
-    if (htmlLower.includes('_next') || htmlLower.includes('next.js')) add("Frameworks", "Next.js");
-    if (htmlLower.includes('nuxt') || htmlLower.includes('_nuxt')) add("Frameworks", "Nuxt.js");
-    if (htmlLower.includes('react') || htmlLower.includes('data-reactroot')) add("Frameworks", "React");
-    if (htmlLower.includes('ng-app') || htmlLower.includes('angular')) add("Frameworks", "Angular");
-    if (htmlLower.includes('data-v-') || htmlLower.includes('vue')) add("Frameworks", "Vue.js");
-    if (htmlLower.includes('django') || cookies.includes('csrftoken=')) add("Frameworks", "Django");
-    if (headers['x-powered-by']?.includes('express')) add("Frameworks", "Express");
+      if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress')) add("CMS", "WordPress");
+      if (htmlLower.includes('shopify.com') || getHeader('x-shopid') || cookies.includes('_s=')) add("CMS", "Shopify");
+      if (htmlLower.includes('joomla')) add("CMS", "Joomla");
+      if (htmlLower.includes('drupal') || getHeader('x-generator').includes('drupal')) add("CMS", "Drupal");
+      if (htmlLower.includes('magento') || cookies.includes('frontend=')) add("CMS", "Magento");
+      if (htmlLower.includes('bitrix') || cookies.includes('bitrix_sm=')) add("CMS", "1C-Bitrix");
 
-    const server = headers['server'] || '';
-    if (server.includes('nginx')) add("Web Servers", "Nginx");
-    if (server.includes('apache')) add("Web Servers", "Apache");
-    if (server.includes('litespeed')) add("Web Servers", "LiteSpeed");
+      const headersStr = JSON.stringify(Object.fromEntries(page.headers.entries())).toLowerCase();
+      if (headersStr.includes('laravel') || cookies.includes('laravel_session=')) add("Frameworks", "Laravel");
+      if (htmlLower.includes('_next') || htmlLower.includes('next.js')) add("Frameworks", "Next.js");
+      if (htmlLower.includes('nuxt') || htmlLower.includes('_nuxt')) add("Frameworks", "Nuxt.js");
+      if (htmlLower.includes('react') || htmlLower.includes('data-reactroot')) add("Frameworks", "React");
+      if (htmlLower.includes('ng-app') || htmlLower.includes('angular')) add("Frameworks", "Angular");
+      if (htmlLower.includes('data-v-') || htmlLower.includes('vue')) add("Frameworks", "Vue.js");
+      if (htmlLower.includes('django') || cookies.includes('csrftoken=')) add("Frameworks", "Django");
+      if (getHeader('x-powered-by').includes('express')) add("Frameworks", "Express");
 
-    if (headers['x-powered-by']?.includes('php') || cookies.includes('phpsessid=')) add("Programming Languages", "PHP");
-    if (headers['x-powered-by']?.includes('asp.net')) add("Programming Languages", "ASP.NET");
-    if (headers['x-powered-by']?.includes('python')) add("Programming Languages", "Python");
+      const server = getHeader('server');
+      if (server.includes('nginx')) add("Web Servers", "Nginx");
+      if (server.includes('apache')) add("Web Servers", "Apache");
+      if (server.includes('litespeed')) add("Web Servers", "LiteSpeed");
 
-    if (htmlLower.includes('google-analytics.com') || htmlLower.includes('gtag(') || htmlLower.includes('ga(')) add("Analytics", "Google Analytics");
-    if (htmlLower.includes('googletagmanager.com/gtag/js?id=g-')) add("Analytics", "GA4");
-    if (htmlLower.includes('yandex.ru/metrika') || htmlLower.includes('mc.yandex.ru')) add("Analytics", "Yandex Metrika");
-    if (htmlLower.includes('googletagmanager.com') || htmlLower.includes('gtm.js')) add("Tag Managers", "Google Tag Manager");
+      if (getHeader('x-powered-by').includes('php') || cookies.includes('phpsessid=')) add("Programming Languages", "PHP");
+      if (getHeader('x-powered-by').includes('asp.net')) add("Programming Languages", "ASP.NET");
+      if (getHeader('x-powered-by').includes('python')) add("Programming Languages", "Python");
 
-    if (htmlLower.includes('manifest.json') || htmlLower.includes('theme-color')) add("Miscellaneous", "PWA");
-    if (htmlLower.includes('og:title')) add("Miscellaneous", "Open Graph");
+      if (htmlLower.includes('google-analytics.com') || htmlLower.includes('gtag(') || htmlLower.includes('ga(')) add("Analytics", "Google Analytics");
+      if (htmlLower.includes('googletagmanager.com/gtag/js?id=g-')) add("Analytics", "GA4");
+      if (htmlLower.includes('yandex.ru/metrika') || htmlLower.includes('mc.yandex.ru')) add("Analytics", "Yandex Metrika");
+      if (htmlLower.includes('googletagmanager.com') || htmlLower.includes('gtm.js')) add("Tag Managers", "Google Tag Manager");
 
-    const jqueryMatch = htmlLower.match(/jquery[^\w]*([0-9\.]+)(?:\.min)?\.js/);
-    if (jqueryMatch) add("JS Libraries", `jQuery ${jqueryMatch[1]}`);
-    else if (htmlLower.includes('jquery')) add("JS Libraries", "jQuery");
+      if (htmlLower.includes('manifest.json') || htmlLower.includes('theme-color')) add("Miscellaneous", "PWA");
+      if (htmlLower.includes('og:title')) add("Miscellaneous", "Open Graph");
+
+      const jqueryMatch = htmlLower.match(/jquery[^\w]*([0-9\.]+)(?:\.min)?\.js/);
+      if (jqueryMatch) add("JS Libraries", `jQuery ${jqueryMatch[1]}`);
+      else if (htmlLower.includes('jquery')) add("JS Libraries", "jQuery");
+    }
 
     return { categories: Object.keys(categories).length ? categories : { "None": ["None Detected"] } };
   }
 
-  function extractInternalPaths(html: string, domain: string) {
-    const paths = new Set<string>();
-    paths.add("/");
-    
-    // Common sensible paths
-    paths.add("/login");
-    paths.add("/cart");
-    paths.add("/checkout");
-    paths.add("/profile");
-    paths.add("/search");
-    paths.add("/admin");
-    paths.add("/api");
-    
-    const regex = /href=["']([^"']+)["']/gi;
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-      let link = match[1];
-      if (link.startsWith('http://') || link.startsWith('https://')) {
-        if (link.includes(domain)) {
-          try {
-             let url = new URL(link);
-             paths.add(url.pathname + url.search);
-          } catch(e){}
-        }
-      } else if (link.startsWith('/')) {
-        paths.add(link);
-      }
-    }
-    
-    // Sort so paths with parameters come first (more likely to be vulnerable to XSS/SQLi)
-    return Array.from(paths).sort((a, b) => {
-       const aHasQ = a.includes('?');
-       const bHasQ = b.includes('?');
-       if (aHasQ && !bHasQ) return -1;
-       if (!aHasQ && bHasQ) return 1;
-       return 0;
-    }).slice(0, 10);
-  }
-
   // Vulnerability Scan
-  async function scanVulnerabilities(domain: string, paths: string[]) {
+  async function scanVulnerabilities(domain: string, discoveredUrls: string[]) {
     const results = {
-      xss: { vulnerable: false, details: "No generic XSS reflection found." },
-      sqli: { vulnerable: false, details: "No standard SQL syntax errors detected in response." },
+      xss: { vulnerable: false, details: "No generic XSS reflection found.", pages: [] as string[] },
+      sqli: { vulnerable: false, details: "No standard SQL syntax errors detected in response.", pages: [] as string[] },
       cors: { vulnerable: false, details: "CORS policy seems restrictive." },
       files: { vulnerable: false, found: [] as string[], details: "No obvious sensitive files exposed." },
-      admin: { vulnerable: false, found: [] as string[], details: "No standard admin panels detected." }
+      admin: { vulnerable: false, found: [] as string[], details: "No standard admin panels detected." },
+      scanned_pages: discoveredUrls.length
     };
+    
+    // Test up to 50 pages
+    const urlsToTest = discoveredUrls.slice(0, 50);
     
     // CORS
     try {
-      const resp = await fetch(`https://${domain}`, { headers: { "Origin": "https://evil.com" }, redirect: "follow", timeout: 4000 });
+      const resp = await fetch(`https://${domain}`, { headers: { "Origin": "https://evil.com" }, redirect: "follow", signal: AbortSignal.timeout(5000) });
       const allowOrigin = resp.headers.get("access-control-allow-origin");
       if (allowOrigin === "*" || allowOrigin === "https://evil.com") {
         results.cors.vulnerable = true;
@@ -241,42 +262,30 @@ async function startServer() {
     } catch(e) {}
 
     // Files
-    const filesToCheck = [
-      ".env", 
-      ".env.local", 
-      ".env.production",
-      ".git/config", 
-      "docker-compose.yml",
-      "package.json",
-      "composer.json",
-      "wp-config.php.bak",
-      "manage.py",               // Django
-      "next.config.js",          // Next.js
-      "storage/logs/laravel.log" // Laravel
-    ];
-    for (const file of filesToCheck) {
+    const filesToCheck = [".env", ".git/config", "docker-compose.yml"];
+    await Promise.all(filesToCheck.map(async file => {
       try {
-        const resp = await fetch(`https://${domain}/${file}`, { redirect: "manual", timeout: 3000 });
+        const resp = await fetch(`https://${domain}/${file}`, { redirect: "manual", signal: AbortSignal.timeout(5000) });
         if (resp.status === 200) {
           const text = (await resp.text()).toLowerCase();
-          if (text.includes("<html")) continue;
+          if (text.includes("<html")) return;
           if (file === ".env" && (text.includes("db_") || text.includes("app_key") || text.includes("="))) results.files.found.push(file);
           else if (file === ".git/config" && text.includes("[core]")) results.files.found.push(file);
           else if (file === "docker-compose.yml" && text.includes("version:")) results.files.found.push(file);
           else if (text.trim().length > 0 && !text.trim().startsWith("<")) results.files.found.push(file);
         }
       } catch(e) {}
-    }
+    }));
     if (results.files.found.length > 0) {
       results.files.vulnerable = true;
       results.files.details = `Exposed sensitive files: ${results.files.found.join(', ')}`;
     }
 
     // Admin
-    const panels = ["admin", "wp-admin", "login", "dashboard", "manager"];
-    for (const panel of panels) {
+    const panels = ["admin", "wp-admin", "login", "dashboard"];
+    await Promise.all(panels.map(async panel => {
       try {
-        const resp = await fetch(`https://${domain}/${panel}`, { redirect: "follow", timeout: 3000 });
+        const resp = await fetch(`https://${domain}/${panel}`, { redirect: "follow", signal: AbortSignal.timeout(5000) });
         if (resp.status === 200) {
           const text = (await resp.text()).toLowerCase();
           if (text.includes("password") || text.includes("login") || text.includes("пароль") || text.includes("войти") || text.includes(panel)) {
@@ -284,59 +293,73 @@ async function startServer() {
           }
         }
       } catch(e) {}
-    }
+    }));
     if (results.admin.found.length > 0) {
+      results.admin.vulnerable = true;
       results.admin.details = `Found admin/login paths: ${results.admin.found.join(', ')}`;
     }
 
     // XSS
     const xssPayload = '"><script>console.log("xss_test_1337")</script>';
-    for (const path of paths) {
-      try {
-        const sep = path.includes('?') ? '&' : '?';
-        const url = `https://${domain}${path}${sep}search=${encodeURIComponent(xssPayload)}&q=${encodeURIComponent(xssPayload)}`;
-        const resp = await fetch(url, { redirect: "follow", timeout: 3000 });
-        const text = (await resp.text()).toLowerCase();
-        const reasons = [];
-        if (text.includes(xssPayload.toLowerCase())) reasons.push("Input reflection (payload found entirely in response)");
-        
-        const csp = resp.headers.get("content-security-policy");
-        if (!csp) reasons.push("Missing Content-Security-Policy (CSP) header");
-        
-        const xssProtect = resp.headers.get("x-xss-protection");
-        if (xssProtect === "0") reasons.push("X-XSS-Protection is explicitly disabled");
-        
-        if (reasons.length > 0) {
-          if (reasons.length > 1 || reasons[0].includes("Input reflection")) {
-            results.xss.vulnerable = true;
-            results.xss.details = `Potential XSS found on ${path}: ` + reasons.join(", ");
-            break; // Stop at first vulnerable path
-          } else if (!results.xss.vulnerable) {
-            results.xss.details = `Low/Moderate Risk on ${path}: ` + reasons.join(", ");
+    for (let i = 0; i < urlsToTest.length; i += 10) {
+      const chunk = urlsToTest.slice(i, i + 10);
+      await Promise.all(chunk.map(async url => {
+        try {
+          const testUrl = new URL(url);
+          testUrl.searchParams.append("search", xssPayload);
+          testUrl.searchParams.append("q", xssPayload);
+          const resp = await fetch(testUrl.toString(), { signal: AbortSignal.timeout(5000) });
+          const text = (await resp.text()).toLowerCase();
+          
+          let localVulnerable = false;
+          if (text.includes(xssPayload.toLowerCase())) {
+              localVulnerable = true;
           }
-        }
-      } catch(e) {}
+          
+          if (localVulnerable) {
+             results.xss.vulnerable = true;
+             results.xss.pages.push(url);
+             results.xss.details = "Potential XSS found on some pages due to input reflection.";
+          }
+        } catch(e) {}
+      }));
     }
 
     // SQLi
     const sqliPayload = "'";
-    for (const path of paths) {
-      try {
-        const sep = path.includes('?') ? '&' : '?';
-        const url = `https://${domain}${path}${sep}id=${encodeURIComponent(sqliPayload)}&page=${encodeURIComponent(sqliPayload)}&query=${encodeURIComponent(sqliPayload)}`;
-        const resp = await fetch(url, { redirect: "follow", timeout: 3000 });
-        const text = (await resp.text()).toLowerCase();
-        const sqlErrors = ["you have an error in your sql syntax", "warning: mysql", "unclosed quotation mark after the character string", "quoted string not properly terminated", "pg_query(): query failed", "sqlite3.operationerror", "sql syntax error", "mysql_fetch", "ora-01756"];
-        for (const err of sqlErrors) {
-          if (text.includes(err)) {
-            results.sqli.vulnerable = true;
-            results.sqli.details = `Potential SQL Injection found on ${path}: Database error message detected ('${err}').`;
-            break;
+    for (let i = 0; i < urlsToTest.length; i += 10) {
+      const chunk = urlsToTest.slice(i, i + 10);
+      await Promise.all(chunk.map(async url => {
+        try {
+          const testUrl = new URL(url);
+          testUrl.searchParams.append("id", sqliPayload);
+          testUrl.searchParams.append("page", sqliPayload);
+          const resp = await fetch(testUrl.toString(), { signal: AbortSignal.timeout(5000) });
+          const text = (await resp.text()).toLowerCase();
+          const sqlErrors = ["you have an error in your sql syntax", "warning: mysql", "unclosed quotation mark after the character string", "quoted string not properly terminated", "pg_query(): query failed", "sqlite3.operationerror", "sql syntax error", "mysql_fetch", "ora-01756"];
+          for (const err of sqlErrors) {
+            if (text.includes(err)) {
+              results.sqli.vulnerable = true;
+              results.sqli.pages.push(url);
+              results.sqli.details = `Potential SQL Injection found. Database error message detected on some pages.`;
+              break;
+            }
           }
-        }
-        if (results.sqli.vulnerable) break; // Stop at first vulnerable path
-      } catch(e) {}
+        } catch(e) {}
+      }));
     }
+
+    if (!results.xss.vulnerable && results.xss.pages.length === 0) {
+        try {
+           const resp = await fetch(`https://${domain}`, { signal: AbortSignal.timeout(3000) });
+           if (!resp.headers.get("content-security-policy")) {
+               results.xss.details = "Low/Moderate Risk: Missing Content-Security-Policy (CSP) header.";
+           }
+        } catch(e){}
+    }
+
+    results.xss.pages = [...new Set(results.xss.pages)];
+    results.sqli.pages = [...new Set(results.sqli.pages)];
 
     return results;
   }
@@ -376,12 +399,12 @@ async function startServer() {
     
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `Act as an AI Professional Master Tester (QA & Security Penetration Testing Expert). Analyze the following scan results for ${domain}.
+      const prompt = `Act as a Senior Cybersecurity Analyst. Analyze the following scan results for ${domain}.
 Score: ${score}/100
 Risk Level: ${riskLevel}
 Results: ${JSON.stringify(results)}
 
-Provide a deeply professional and comprehensive security and QA analysis. Highlight detected vulnerabilities, configuration flaws, missing protections, and provide actionable, step-by-step technical recommendations for developers and system administrators. Your tone should be authoritative, analytical, and highly structured, like a Master of QA and Cybersecurity.
+Provide a professional security analysis, highlighting detected risks, missing protections, and actionable recommendations.
 IMPORTANT: Your entire response (summary, title, status, detailed description, recommendation) MUST BE STRICTLY AND COMPLETELY WRITTEN IN ${language}.
 Format your response STRICTLY as valid JSON with the following structure:
 {
@@ -428,94 +451,74 @@ Do NOT output English unless specifically requested.`;
 
   // Main Endpoint
   app.get("/api/backend/scan", async (req, res) => {
-    try {
-      let rawDomain = req.query.domain as string;
-      let lang = (req.query.lang as string) || "ru";
-      if (!rawDomain) {
-         res.status(400).json({ detail: "Missing domain parameter" });
-         return;
-      }
-      
-      let domain = rawDomain.replace("http://", "").replace("https://", "").split("/")[0];
-      
-      const results: any = {};
-      let respHeaders: Record<string, string> = {};
-      let respServer = "";
-      let respCookies = "";
-      let html = "";
-      
-      try {
-        const response = await fetch(`https://${domain}`, { redirect: "follow", timeout: 5000 });
-        html = await response.text();
-        const rawObj: Record<string, string> = {};
-        response.headers.forEach((v, k) => rawObj[k.toLowerCase()] = v.toLowerCase());
-        respHeaders = rawObj;
-        respServer = respHeaders['server'] || '';
-        respCookies = respHeaders['set-cookie'] || '';
-        
-        results.headers = processHeaders(response.headers);
-      } catch(e) {
-        results.headers = { error: String(e) };
-      }
-      
-      let internalPaths = ["/"];
-      let extraHtml = "";
-      if (html) {
-        try {
-          internalPaths = extractInternalPaths(html, domain);
-          // Fetch up to 3 more pages concurrently to improve CMS and Tech detection
-          const pagesToFetch = internalPaths.filter(p => p !== '/').slice(0, 3);
-          await Promise.all(pagesToFetch.map(async (path) => {
-            try {
-              const r = await fetch(`https://${domain}${path}`, { redirect: "follow", timeout: 3000 });
-              const pageHtml = await r.text();
-              extraHtml += "\n" + pageHtml;
-              r.headers.forEach((v, k) => {
-                 if (k.toLowerCase() === 'set-cookie') respCookies += ';' + v.toLowerCase();
-                 if (!respHeaders[k.toLowerCase()]) respHeaders[k.toLowerCase()] = v.toLowerCase();
-              });
-            } catch(e){}
-          }));
-        } catch(e) {}
-      }
-  
-      results.ssl = await scanSsl(domain);
-      results.dns_whois = await scanDnsWhois(domain);
-      results.cms = scanCms(html + extraHtml, respHeaders, respCookies);
-      results.ports = await scanPorts(domain);
-      
-      const cookiesObj: Record<string, string> = {};
-      if (respCookies) {
-        const parts = respCookies.split(';');
-        for (const p of parts) {
-          const [k, v] = p.trim().split('=');
-          if (k && v) cookiesObj[k] = v;
-          else if (k) cookiesObj[k] = "true";
-        }
-      }
-      
-      results.ddos = scanDdos(respHeaders, respServer, cookiesObj);
-      results.vulnerabilities = await scanVulnerabilities(domain, internalPaths);
-      
-      const { score, riskLevel } = calculateScore(results);
-      
-      const languageMap: Record<string, string> = { ru: "Russian", uz: "Uzbek", en: "English" };
-      const fullLanguageName = languageMap[lang] || "Russian";
-      
-      const aiSummary = await generateAiSummary(domain, results, score, riskLevel, fullLanguageName);
-      
-      res.json({
-          domain,
-          score,
-          risk_level: riskLevel,
-          results,
-          ai_summary: aiSummary,
-          timestamp: new Date().toISOString()
-      });
-    } catch (e: any) {
-        console.error("Critical error in /api/backend/scan :", e);
-        res.status(500).json({ detail: "Internal server error", error: e.message });
+    let rawDomain = req.query.domain as string;
+    let lang = (req.query.lang as string) || "ru";
+    if (!rawDomain) {
+       res.status(400).json({ detail: "Missing domain parameter" });
+       return;
     }
+    
+    let domain = rawDomain.replace("http://", "").replace("https://", "").split("/")[0];
+    
+    const results: any = {};
+    
+    // Start crawl
+    const crawledPages = await crawl(domain, 50);
+    const mainPage = crawledPages[0] || { url: `https://${domain}`, html: "", headers: new Headers(), cookies: "" };
+    
+    let respHeaders: Record<string, string> = {};
+    let respServer = "";
+    let respCookies = mainPage.cookies || "";
+    let html = mainPage.html || "";
+    
+    if (mainPage.headers && mainPage.headers.entries) {
+      const hData = processHeaders(mainPage.headers);
+      results.headers = hData;
+      respHeaders = hData.raw;
+      respServer = respHeaders['server'] || '';
+    } else {
+      results.headers = { error: "Failed to fetch headers" };
+    }
+    
+    results.ssl = await scanSsl(domain);
+    results.dns_whois = await scanDnsWhois(domain);
+    
+    // Pass multiple pages to CMS scan
+    results.cms = scanCms(crawledPages);
+    
+    results.ports = await scanPorts(domain);
+    
+    const cookiesObj: Record<string, string> = {};
+    if (respCookies) {
+      const parts = respCookies.split(';');
+      for (const p of parts) {
+        const [k, v] = p.trim().split('=');
+        if (k && v) cookiesObj[k] = v;
+        else if (k) cookiesObj[k] = "true";
+      }
+    }
+    
+    results.ddos = scanDdos(respHeaders, respServer, cookiesObj);
+    
+    // Pass discovered URLs to Vulnerabilities scan
+    const discoveredUrls = crawledPages.map(p => p.url);
+    results.vulnerabilities = await scanVulnerabilities(domain, discoveredUrls);
+    
+    const { score, riskLevel } = calculateScore(results);
+    
+    const languageMap: Record<string, string> = { ru: "Russian", uz: "Uzbek", en: "English" };
+    const fullLanguageName = languageMap[lang] || "Russian";
+    
+    const aiSummary = await generateAiSummary(domain, results, score, riskLevel, fullLanguageName);
+    
+    res.json({
+        domain,
+        score,
+        risk_level: riskLevel,
+        results,
+        ai_summary: aiSummary,
+        timestamp: new Date().toISOString()
+    });
   });
 
   // Vite middleware for development
