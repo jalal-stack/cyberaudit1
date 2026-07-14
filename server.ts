@@ -237,6 +237,109 @@ async function startServer() {
     return { categories: Object.keys(categories).length ? categories : { "None": ["None Detected"] } };
   }
 
+  // API Scan (REST / GraphQL)
+  async function scanApi(domain: string, discoveredUrls: string[]) {
+    const results = {
+      found: false,
+      endpoints: [] as string[],
+      graphql: false,
+      rest: false,
+      swagger: false,
+      vulnerabilities: [] as string[],
+      details: "No standard API endpoints detected."
+    };
+
+    const commonEndpoints = [
+      '/api',
+      '/api/v1',
+      '/graphql',
+      '/v1/graphql',
+      '/api/graphql',
+      '/swagger.json',
+      '/api/swagger.json',
+      '/openapi.json',
+      '/docs',
+      '/api/docs'
+    ];
+
+    // Look if any discovered URLs contain 'api' or 'graphql'
+    const apiUrls = discoveredUrls.filter(u => {
+        try {
+            const url = new URL(u);
+            return url.pathname.includes('/api') || url.pathname.includes('/graphql') || url.pathname.includes('/v1');
+        } catch(e) { return false; }
+    });
+
+    results.endpoints.push(...apiUrls);
+
+    // Active test
+    await Promise.all(commonEndpoints.map(async ep => {
+      try {
+        const resp = await fetch(`https://${domain}${ep}`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+        if (resp.status === 200 || resp.status === 401 || resp.status === 403 || resp.status === 400 || resp.status === 405) {
+            results.endpoints.push(`https://${domain}${ep}`);
+            if (ep.includes('graphql')) results.graphql = true;
+            if (ep.includes('swagger') || ep.includes('openapi') || ep.includes('docs')) results.swagger = true;
+            if (ep.includes('/api')) results.rest = true;
+        }
+      } catch(e) {}
+    }));
+
+    results.endpoints = [...new Set(results.endpoints)];
+
+    if (results.endpoints.length > 0) {
+      results.found = true;
+      let types = [];
+      if (results.rest) types.push("REST API");
+      if (results.graphql) types.push("GraphQL API");
+      if (results.swagger) types.push("Swagger/OpenAPI Documentation");
+      if (types.length === 0) types.push("Custom API");
+      
+      results.details = `Detected potential API endpoints (${types.join(', ')}). Found ${results.endpoints.length} related paths.`;
+
+      // --- VULNERABILITY CHECKS ---
+      // 1. Swagger/Docs exposure
+      if (results.swagger) {
+          results.vulnerabilities.push("Publicly accessible Swagger/OpenAPI documentation found. This can expose the internal API structure to attackers.");
+      }
+
+      // 2. GraphQL Introspection
+      if (results.graphql) {
+          const gqlEndpoints = results.endpoints.filter(e => e.includes('graphql'));
+          for (const ep of gqlEndpoints) {
+              try {
+                  const res = await fetch(ep, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ query: "{ __schema { types { name } } }" }),
+                      signal: AbortSignal.timeout(3000)
+                  });
+                  const data = await res.json();
+                  if (data && data.data && data.data.__schema) {
+                      results.vulnerabilities.push(`GraphQL Introspection is enabled on ${ep}. Attackers can extract the entire database schema.`);
+                  }
+              } catch (e) {}
+          }
+      }
+
+      // 3. Unauthenticated Access (BOLA/IDOR basic check)
+      const sensitivePaths = ['/api/users', '/api/v1/users', '/api/admin', '/api/v1/admin'];
+      for (const sp of sensitivePaths) {
+          try {
+              const res = await fetch(`https://${domain}${sp}`, { signal: AbortSignal.timeout(3000) });
+              if (res.status === 200) {
+                  const ct = res.headers.get('content-type') || '';
+                  if (ct.includes('application/json')) {
+                       results.vulnerabilities.push(`Potential Broken Object Level Authorization (BOLA): Sensitive endpoint ${sp} is accessible without an authentication token and returned JSON data.`);
+                  }
+              }
+          } catch(e) {}
+      }
+    }
+
+    return results;
+  }
+
   // Vulnerability Scan
   async function scanVulnerabilities(domain: string, discoveredUrls: string[]) {
     const results = {
@@ -502,6 +605,10 @@ Do NOT output English unless specifically requested.`;
     
     // Pass discovered URLs to Vulnerabilities scan
     const discoveredUrls = crawledPages.map(p => p.url);
+    
+    // API Scan
+    results.api = await scanApi(domain, discoveredUrls);
+
     results.vulnerabilities = await scanVulnerabilities(domain, discoveredUrls);
     
     const { score, riskLevel } = calculateScore(results);

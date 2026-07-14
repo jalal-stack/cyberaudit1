@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ScanResults, ScanId, ScanOption, ScanStatus, ScanResultItem, ScanHistoryItem } from '../types';
 import { runSecurityAudit } from '../services/geminiService';
-import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon, BugIcon, FileTextIcon } from './icons';
+import { GlobeIcon, PlayIcon, ShieldIcon, ServerIcon, LockIcon, DatabaseIcon, TriangleAlertIcon, ZapIcon, CircleCheckIcon, CircleIcon, InfoIcon, LoaderIcon, BugIcon, FileTextIcon, NetworkIcon } from './icons';
 import { useTranslation, Language } from '../App';
 
 const ScanTypeOption: React.FC<{ option: ScanOption; isChecked: boolean; onChange: (id: ScanId) => void; }> = ({ option, isChecked, onChange }) => {
@@ -208,6 +208,7 @@ export const SecurityScanner: React.FC<{
     { id: ScanId.PORTS, label: t('scanner.scanOptions.ports'), icon: ServerIcon },
     { id: ScanId.HEADERS, label: t('scanner.scanOptions.headers'), icon: ShieldIcon },
     { id: ScanId.CMS, label: t('scanner.scanOptions.cms'), icon: DatabaseIcon },
+    { id: ScanId.API, label: t('scanner.scanOptions.api'), icon: NetworkIcon },
     { id: ScanId.LEAKS, label: t('scanner.scanOptions.leaks'), icon: TriangleAlertIcon },
     { id: ScanId.DDOS, label: t('scanner.scanOptions.ddos'), icon: ZapIcon },
   ], [t]);
@@ -472,6 +473,53 @@ export const SecurityScanner: React.FC<{
                                 </p>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+            
+            {(results as any).rawApi && (
+                <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-slate-700 p-6 md:p-8 mt-6 mb-6">
+                    <div className="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
+                        <NetworkIcon className="h-6 w-6 text-purple-400" />
+                        <h3 className="text-2xl font-bold text-white">{t('scanner.apiLabels.title') || "API Scanners (REST/GraphQL)"}</h3>
+                    </div>
+                    <div className={`p-5 rounded-xl border ${(results as any).rawApi.found ? 'bg-purple-900/20 border-purple-500/50' : 'bg-slate-900/50 border-slate-800/50'}`}>
+                         <div className="flex items-center space-x-2 mb-3">
+                             <div className={`w-3 h-3 rounded-full ${(results as any).rawApi.found ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.6)]' : 'bg-slate-500'}`}></div>
+                             <span className="text-base font-semibold text-white">API Endpoints</span>
+                         </div>
+                         <p className={`text-sm ${(results as any).rawApi.found ? 'text-purple-300 font-medium' : 'text-slate-400'}`}>
+                             {(results as any).rawApi.details}
+                         </p>
+                         {(results as any).rawApi.found && (results as any).rawApi.endpoints.length > 0 && (
+                            <div className="mt-4">
+                                <span className="text-xs text-slate-400 uppercase tracking-wider">{t('scanner.apiLabels.endpoints') || "Discovered Endpoints:"}</span>
+                                <ul className="mt-2 space-y-1">
+                                    {(results as any).rawApi.endpoints.slice(0, 5).map((ep: string, idx: number) => (
+                                        <li key={idx} className="text-xs text-slate-300 bg-slate-900/50 px-2 py-1 rounded border border-slate-800 truncate">{ep}</li>
+                                    ))}
+                                    {(results as any).rawApi.endpoints.length > 5 && (
+                                        <li className="text-xs text-slate-500 italic mt-1">...and {(results as any).rawApi.endpoints.length - 5} more</li>
+                                    )}
+                                </ul>
+                            </div>
+                         )}
+                         {(results as any).rawApi.found && (results as any).rawApi.vulnerabilities && (results as any).rawApi.vulnerabilities.length > 0 && (
+                            <div className="mt-6 border-t border-slate-700/50 pt-4">
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <TriangleAlertIcon className="h-4 w-4 text-orange-400" />
+                                    <span className="text-sm font-semibold text-orange-400">{t('scanner.apiLabels.vulnerabilities') || "API Vulnerabilities Found:"}</span>
+                                </div>
+                                <ul className="space-y-2">
+                                    {(results as any).rawApi.vulnerabilities.map((vuln: string, idx: number) => (
+                                        <li key={idx} className="text-sm text-slate-300 bg-orange-500/10 border border-orange-500/20 px-3 py-2 rounded-lg flex items-start">
+                                            <span className="mr-2 mt-0.5">•</span>
+                                            <span>{vuln}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                         )}
                     </div>
                 </div>
             )}

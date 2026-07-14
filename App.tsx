@@ -6,7 +6,6 @@ import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { About } from './components/About';
 import { Documentation } from './components/Documentation';
-import { Agents } from './components/Agents';
 import { ScanHistoryItem, ScanResults } from './types';
 
 // --- I18N (Internationalization) Setup ---
@@ -22,7 +21,6 @@ const translations = {
       scanner: "Сканер безопасности",
       about: "О проекте",
       docs: "Документация",
-      agents: "ИИ Агенты",
       logout: "Выйти",
       login: "Войти",
       register: "Регистрация",
@@ -106,6 +104,7 @@ const translations = {
         ports: "Сканирование портов",
         headers: "HTTP заголовки безопасности",
         cms: "Технологии & CMS (на базе Wappalyzer)",
+        api: "Сканеры API (REST/GraphQL)",
         leaks: "Проверка утечек данных",
         ddos: "DDoS защита",
       },
@@ -119,6 +118,11 @@ const translations = {
         registrar: "Регистратор",
         nameservers: "Серверы Имен",
         country: "Страна",
+      },
+      apiLabels: {
+        title: "Сканеры API (REST/GraphQL)",
+        endpoints: "Обнаруженные конечные точки:",
+        vulnerabilities: "Найденные уязвимости API:",
       },
       vulnLabels: {
         title: "Уязвимости и Разведка (XSS / SQLi / CORS / Файлы)",
@@ -201,7 +205,6 @@ const translations = {
       scanner: "Xavfsizlik skaneri",
       about: "Loyiha haqida",
       docs: "Hujjatlar",
-      agents: "AI Agentlar",
       logout: "Chiqish",
       login: "Kirish",
       register: "Ro'yxatdan o'tish",
@@ -285,6 +288,7 @@ const translations = {
         ports: "Portlarni skanerlash",
         headers: "HTTP xavfsizlik sarlavhalari",
         cms: "Texnologiyalar va CMS (Wappalyzer asosida)",
+        api: "API Skanerlari (REST/GraphQL)",
         leaks: "Ma'lumotlar sizib chiqishini tekshirish",
         ddos: "DDoS himoyasi",
       },
@@ -298,6 +302,11 @@ const translations = {
         registrar: "Registrator",
         nameservers: "Nom serverlari (Nameservers)",
         country: "Mamlakat",
+      },
+      apiLabels: {
+        title: "API Skanerlari (REST/GraphQL)",
+        endpoints: "Topilgan oxirgi nuqtalar (endpoints):",
+        vulnerabilities: "Topilgan API zaifliklari:",
       },
       vulnLabels: {
         title: "Zaifliklar va Razvedka (XSS / SQLi / CORS / Fayllar)",
@@ -380,7 +389,6 @@ const translations = {
       scanner: "Security Scanner",
       about: "About",
       docs: "Documentation",
-      agents: "AI Agents",
       logout: "Logout",
       login: "Login",
       register: "Register",
@@ -464,6 +472,7 @@ const translations = {
         ports: "Port Scan",
         headers: "HTTP Security Headers",
         cms: "Technologies & CMS (Wappalyzer logic)",
+        api: "API Scanners (REST/GraphQL)",
         leaks: "Data Leak Check",
         ddos: "DDoS Protection",
       },
@@ -477,6 +486,11 @@ const translations = {
         registrar: "Registrar",
         nameservers: "Name Servers",
         country: "Country",
+      },
+      apiLabels: {
+        title: "API Scanners (REST/GraphQL)",
+        endpoints: "Discovered Endpoints:",
+        vulnerabilities: "API Vulnerabilities Found:",
       },
       vulnLabels: {
         title: "Vulnerabilities & Recon (XSS / SQLi / CORS / Files)",
@@ -749,10 +763,6 @@ function App() {
     
     if (currentView === 'documentation') {
       return <Documentation />;
-    }
-    
-    if (currentView === 'agents') {
-      return <Agents />;
     }
     return null;
   };

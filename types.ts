@@ -5,6 +5,7 @@ export enum ScanId {
   PORTS = 'ports',
   HEADERS = 'headers',
   CMS = 'cms',
+  API = 'api',
   LEAKS = 'leaks',
   DDOS = 'ddos',
 }
@@ -36,6 +37,7 @@ export interface ScanResults {
   rawTechnologies?: Record<string, string[]>;
   rawDnsWhois?: Record<string, any>;
   rawVulnerabilities?: Record<string, any>;
+  rawApi?: Record<string, any>;
 }
 
 export interface ScanHistoryItem {

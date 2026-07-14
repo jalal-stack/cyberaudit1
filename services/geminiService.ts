@@ -177,13 +177,19 @@ export const runSecurityAudit = async (url: string, selectedScans: string[], tra
         rawVulnerabilities = res.vulnerabilities;
     }
     
+    let rawApi: Record<string, any> = {};
+    if (res.api) {
+        rawApi = res.api;
+    }
+    
     return {
         overallScore: overallScore,
         summary: summaryText,
         details: details,
         rawTechnologies: rawTechnologies,
         rawDnsWhois: rawDnsWhois,
-        rawVulnerabilities: rawVulnerabilities
+        rawVulnerabilities: rawVulnerabilities,
+        rawApi: rawApi
     } as ScanResults;
 
   } catch (error) {

@@ -44,15 +44,6 @@ export const Header: React.FC<HeaderProps> = ({ isAuthenticated, currentView, se
         >
           <span>{t('header.docs')}</span>
         </button>
-        <button
-          className={`${buttonClass} ${currentView === 'agents' ? activeClasses : inactiveClasses}`}
-          onClick={() => handleNavClick('agents')}
-        >
-          <span className="flex items-center space-x-1">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <span>{t('header.agents')}</span>
-          </span>
-        </button>
       </>
     );
 

@@ -1,149 +1,45 @@
-<div align="center">
-  <!-- Replace with actual logo -->
-  <img src="docs/assets/logo.png" alt="CyberAudit Logo" width="150" />
-  
-  <h1>CyberAudit 🛡️</h1>
-  
-  <p><strong>Open-source automated web security assessment platform for vulnerability detection and security analysis.</strong></p>
+# 🛡️ CyberAudit: Комплексный сканер безопасности веб-приложений
 
-  <p>
-    <img src="https://img.shields.io/badge/react-18-blue?style=for-the-badge&logo=react" alt="React" />
-    <img src="https://img.shields.io/badge/typescript-5.0-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/express-node.js-green?style=for-the-badge&logo=nodedotjs" alt="Node.js" />
-    <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License" />
-  </p>
-  
-  <p>
-    <em>Topics: <code>cybersecurity</code>, <code>web-security</code>, <code>react</code>, <code>express</code>, <code>vulnerability-scanner</code>, <code>security</code>, <code>owasp</code>, <code>typescript</code></em>
-  </p>
-</div>
+Учебный и исследовательский проект, предназначенный для автоматизированного анализа защищенности веб-ресурсов. Проект объединяет в себе сразу несколько типов сканеров, обеспечивая всесторонний первичный аудит безопасности сайта.
 
----
+## 🌟 Преимущества и возможности проекта (Архитектура сканера)
 
-## 🎓 Academic Context & AI-Assisted Development
+В рамках данного проекта реализованы базовые методы тестирования на проникновение (Penetration Testing) и разведки (Reconnaissance). Инструмент объединяет возможности нескольких классов сканеров:
 
-This project was developed as a demonstration of modern cybersecurity concepts and **advanced AI-Assisted Software Engineering**. 
+1. **🌐 Универсальные веб-сканеры**
+   - Автоматически ищет широкий спектр уязвимостей, таких как отсутствие защиты от XSS, риски SQL-инъекций (базовые проверки), неправильные настройки CORS и отсутствие куки-флагов `HttpOnly`/`Secure`.
 
-As a prospective student aiming for advanced academic studies in South Korea, my goal was to showcase not just technical coding ability, but **the competent, strategic, and professional use of Artificial Intelligence** in the software development lifecycle (SDLC).
+2. **🏗️ Инфраструктурные сканеры**
+   - Проверяет веб-серверы и сетевую инфраструктуру. Включает сканирование открытых портов (Port Scanning) и анализ HTTP-заголовков безопасности (HSTS, CSP, X-Frame-Options), защищающих от кликджекинга и сниффинга.
 
-*   **Strategic Human-AI Collaboration:** I conceptualized the system architecture, defined the rigorous security scanning requirements (such as implementing deep multi-page crawling instead of surface-level checks), and directed the entire development process. I utilized AI models as a collaborative "pair-programmer" to accelerate development, refine complex asynchronous logic, and optimize the React/Node.js stack.
-*   **Prompt Engineering & Architectural Control:** I acted as the lead architect. Every feature was strictly guided by my prompts, and the generated code was reviewed, debugged, and integrated by me to ensure security, performance, and architectural integrity.
-*   **Modern Engineering Practices:** This project highlights my ability to formulate precise technical instructions, manage complex state in a full-stack environment, and leverage cutting-edge AI tools to build scalable, real-world applications.
+3. **🔍 Фаззеры и инструменты перебора (Recon & Crawling)**
+   - Выполняет обход (crawling) сайта, собирая URL, каталоги и параметры. Помогает находить открытые страницы, точки входа и потенциально уязвимые маршруты (например, страницы администратора или тестовые директории).
+   - *Архитектурное решение:* В проекте реализован **направленный (Smart) брутфорс**, который проверяет только самые критичные файлы и пути (например, `.env`, `.git/config`, `wp-admin`, `api/users`). 
+   - *Почему не полный DirBuster?* Полноценный глубокий перебор по словарям (на десятки тысяч вариантов) занимает часы, может быть расценен как DDoS-атака, блокируется современными WAF (Cloudflare) и не подходит для синхронной архитектуры веб-приложения (из-за таймаутов HTTP-запросов). Поэтому сканер фокусируется на "умном" поиске самых опасных утечек, что идеально подходит для быстрого аудита.
 
-This approach reflects the future of computer science and software engineering: combining human domain knowledge and critical thinking with AI capabilities to build robust systems efficiently.
+4. **📦 Сканеры CMS и технологий**
+   - Специализированный модуль (на базе логики Wappalyzer) для определения стека технологий. Эффективно распознает популярные системы управления контентом (WordPress, Joomla, Drupal) и используемые фреймворки, что позволяет сузить вектор атаки.
 
----
+5. **🔌 Сканеры API (REST / GraphQL)**
+   - Анализирует API на предмет типовых проблем безопасности. 
+   - Обнаруживает скрытые `endpoints` (REST и GraphQL).
+   - Проверяет публичный доступ к документации (Swagger/OpenAPI).
+   - Тестирует включенную интроспекцию (Introspection) в GraphQL, позволяющую выгрузить схему базы данных.
+   - Проводит базовые проверки на BOLA/IDOR (Broken Object Level Authorization) для чувствительных маршрутов.
 
-## 📸 Screenshots
+## 🎓 Академическая и практическая ценность
 
-*(Add real screenshots to `docs/assets/` directory before pushing to GitHub)*
+**Важное замечание:** Данный инструмент использует эффективные базовые методы активного и пассивного сканирования. Он не заменяет мощные коммерческие (enterprise) сканеры, использующие гигантские базы сигнатур и сложные механизмы обхода WAF. 
 
-| Dashboard | Scan Results |
-| :---: | :---: |
-| <img src="docs/assets/dashboard.png" alt="Dashboard placeholder" width="400"/> | <img src="docs/assets/scan-results.png" alt="Scan Results placeholder" width="400"/> |
-| **Security Report** | **Vulnerability Details** |
-| <img src="docs/assets/security-report.png" alt="Security Report placeholder" width="400"/> | <img src="docs/assets/vuln-details.png" alt="Vulnerability Details placeholder" width="400"/> |
+Однако, для академических целей и первичного аудита этот проект демонстрирует **глубокое понимание архитектуры веб-безопасности**. 
+- Он автоматизирует рутинную работу пентестера (разведку).
+- Объединяет разрозненные утилиты в единый, удобный интерфейс с применением ИИ (Gemini) для генерации понятных отчетов.
+- Показывает, как злоумышленники или исследователи собирают информацию на первом этапе атаки (Information Gathering).
+
+## 🛠️ Стек технологий
+- **Frontend:** React, TypeScript, Tailwind CSS
+- **Backend:** Node.js, Express (полноценный серверный сканер)
+- **AI Analysis:** Интеграция с Google Gemini API для интеллектуальной оценки рисков и формирования рекомендаций по защите.
 
 ---
-
-## 🚀 Features
-
-*   **Deep Crawling Engine:** Scans up to 50 pages per target domain to ensure a full-scope assessment rather than just homepage analysis.
-*   **Vulnerability Detection:**
-    *   **Cross-Site Scripting (XSS):** Tests for input reflection and missing CSP headers.
-    *   **SQL Injection (SQLi):** Detects standard SQL database error messages.
-    *   **CORS Misconfigurations:** Identifies overly permissive Cross-Origin Resource Sharing policies.
-    *   **Sensitive Data Exposure:** Checks for exposed `.env`, `.git/config`, and `docker-compose.yml` files.
-    *   **Admin Panel Discovery:** Scans for common administrative interfaces.
-*   **Infrastructure & Reconnaissance:**
-    *   **HTTP Security Headers:** Analyzes the presence of security-critical headers (HSTS, CSP, X-Frame-Options, etc.).
-    *   **Technology & CMS Fingerprinting:** Detects frameworks, CMS, Web Servers, and JS libraries based on deep DOM and header inspection.
-    *   **SSL/TLS Analysis:** Validates certificate issuer, expiry, and supported TLS versions.
-    *   **Port Scanning:** Checks standard web and management ports.
-    *   **DDoS Protection Identification:** Detects the presence of Cloudflare or other WAF/CDN solutions.
-*   **Reporting & Scoring:** Generates a comprehensive security score (0-100) and risk level, with actionable recommendations.
-*   **Multi-language Support:** UI available in English (EN), Russian (RU), and Uzbek (UZ).
-
----
-
-## ⚙️ Installation
-
-To run the project locally, ensure you have **Node.js** (v18+) installed.
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/cyberaudit.git
-    cd cyberaudit
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Run the application (Development Mode):**
-    ```bash
-    npm run dev
-    ```
-    *This single command starts both the Express API backend and the Vite React frontend concurrently.* The application will be accessible at `http://localhost:3000`.
-
-4.  *(Optional)* **Build for Production:**
-    ```bash
-    npm run build
-    npm start
-    ```
-
----
-
-## 📁 Project Structure
-
-```text
-cyberaudit/
-├── src/                  # React Frontend
-│   ├── components/       # Reusable UI components (Dashboard, Scanner, etc.)
-│   ├── App.tsx           # Main application entry point & routing
-│   ├── index.css         # Tailwind CSS global styles
-│   └── types.ts          # TypeScript interfaces
-├── docs/                 # Documentation and assets (Screenshots, Architecture)
-│   └── assets/           # Images, Logos, and Demo videos
-├── server.ts             # Express Backend & Scanning Engine (Crawler, Security logic)
-├── package.json          # Project dependencies & scripts
-├── vite.config.ts        # Vite bundler configuration
-└── .env.example          # Environment variables template
-```
-
----
-
-## 🗺️ Roadmap
-
-- [x] **Current Version:** Deep Crawling & Basic Vulnerability Scanning
-- [x] **Multi-language Support:** EN, RU, UZ capabilities
-- [x] **PDF Export:** Downloadable professional security audit reports
-- [ ] **Multi-Agent AI Architecture:** Evolving from a single application to a fully autonomous platform using local LLMs (e.g., LM Studio):
-    - **Chief AI Agent:** Central coordinator for complex security requests (e.g., "Check server 192.168.1.15 and prepare a full report").
-    - **Network Agent:** Deep network analysis and mapping.
-    - **Vulnerability Agent:** Detection and exploitation analysis of known CVEs.
-    - **Web Security Agent:** Dynamic application security testing.
-    - **OSINT & Knowledge Agents:** Open-source intelligence gathering and RAG-based querying against MITRE, OWASP, and NIST databases.
-    - **Report & Compliance Agents:** Automated standard compliance checking and unified report generation.
-- [ ] **REST API:** Open API endpoints for third-party integration
-
----
-
-## 🎥 Demo Video
-
-*(Link your demo video here showing the application in action)*
-
-[Watch the Demo Video on YouTube](#)
-
----
-
-## ⚠️ Disclaimer
-
-**Educational & Authorized Use Only:** This tool is designed for academic research, security auditing, and educational purposes. Do not use this tool against systems you do not own or have explicit permission to test. The authors are not responsible for any misuse or damage caused by this software.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
+*Проект разработан в образовательных целях. Использование инструмента разрешено только на тех ресурсах, где у вас есть явное разрешение на проведение аудита безопасности.*
